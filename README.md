@@ -6,7 +6,7 @@ Using machine learning to build a fast detector simulator that maps parton jets 
 Using the makefile requires the following environmental variables to be set
 (if you ran ```source bin/thisroot.sh``` in your root installation or
 installed root in an active conda environment, ROOTSYS has already been set).
-```
+```Makefile
 export ROOTSYS=path/to/your/root/installation 
 export FASTJETSYS=path/to/your/fastJet/installation
 ```
