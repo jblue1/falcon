@@ -20,9 +20,14 @@ int main(int argc, char const *argv[]) {
     TTree* tree1 = (TTree*) df->Get("genPartTree");
     TTree* tree2 = (TTree*) df->Get("jetTree");
     // set up histagrams
-    TH1* numGenJetsHist = new TH1I("numGenJets", "Distribution of parton jets per event", 31, 0, 30);
-    TH1* numRecoJetsHist = new TH1I("numRecoJets", "Distribution of reco jets per event", 31, 0, 30);
-    TH1* minDeltaRHist = new TH1F("minDeltaRHist", "Distribution of min delta R for each reco jet", 100, 0.0, 15.0);
+    TH1* numPartonJetsHist = new TH1I("numPartonJetsHist", "Distribution of parton jets per event", 31, 0, 30);
+    TH1* numPartonJetsCutHist = new TH1I("numPartonJetsCutHist", "Distribution of parton jets with Pt > 20GeV per event", 31, 0, 30);
+    TH1* numRecoJetsHist = new TH1I("numRecoJetsHist", "Distribution of reco jets per event", 31, 0, 30);
+    TH1* minDeltaRPartonRecoHist = new TH1F("minDeltaRPartonRecoHist", "Distribution of min delta R for each reco jet", 100, 0.0, 10.0);
+    TH1* minDeltaRPartonRecoHistZoom = new TH1F("minDeltaRPartonRecoHistZoom", "Distribution of min delta R for each reco jet", 100, 0.0, 2.0);
+    TH1* partonJetPtCutHist = new TH1F("partonJetPtCutHist", "Parton jet Pt distribution (Pt > 20GeV)", 201, 0.0, 1000.0);
+    TH1* recoJetPtHist = new TH1F("recoJetPtHist", "Reco jet Pt distribution", 200, 0.0, 1000.0);
+    TH1* partonJetPtHist = new TH1F("partonJetPtHist", "Parton jet Pt disribution", 201, 0.0, 1000.0);
     TFile h("../data/histos.root", "new");
 
     // genPartTree variables
@@ -31,12 +36,14 @@ int main(int argc, char const *argv[]) {
     std::vector<Float_t>* Py = 0;
     std::vector<Float_t>* Pz = 0;
     std::vector<Float_t>* E = 0;
+    std::vector<Float_t>* Pt = 0;
 
     // jetTree variables
     ULong64_t event = 0;
-    ULong64_t jetEvent = 0;
-    Float_t jetEta = 0;
-    Float_t jetPhi = 0;
+    ULong64_t recoJetEvent = 0;
+    Float_t recoJetEta = 0;
+    Float_t recoJetPhi = 0;
+    Float_t recoJetPt = 0;
 
     // hold the number of jets in each event for comparison
     std::vector<int> numGenJetsVec;
@@ -48,10 +55,12 @@ int main(int argc, char const *argv[]) {
     tree1->SetBranchAddress("genPartPz", &Pz);
     tree1->SetBranchAddress("genPartE", &E);
     tree1->SetBranchAddress("event", &event);
+    tree1->SetBranchAddress("genPartPt", &Pt);
 
-    tree2->SetBranchAddress("event", &jetEvent);
-    tree2->SetBranchAddress("jetEta", &jetEta);
-    tree2->SetBranchAddress("jetPhi", &jetPhi);
+    tree2->SetBranchAddress("event", &recoJetEvent);
+    tree2->SetBranchAddress("jetEta", &recoJetEta);
+    tree2->SetBranchAddress("jetPhi", &recoJetPhi);
+    tree2->SetBranchAddress("jetPt", &recoJetPt);
 
     int numEvents = tree1->GetEntries();
     int jetIndex = 0;
@@ -60,22 +69,23 @@ int main(int argc, char const *argv[]) {
 
     // loop through events
     for (int i=0; i < numEvents; i++) {
-        std::vector<float> recoJetEta;
-        std::vector<float> recoJetPhi;
-        std::vector<float> genJetEta;
-        std::vector<float> genJetPhi;
+        std::vector<float> recoJetEtaVec;
+        std::vector<float> recoJetPhiVec;
+        std::vector<float> partonJetEtaVec;
+        std::vector<float> partonJetPhiVec;
 
         // get eta and phi fro reco jets
         int numRecoJets = 0;
-        while (jetEvent == event) {
+        while (recoJetEvent == event) {
             jetIndex++;
             numRecoJets++;
             tree2->GetEntry(jetIndex);
-            recoJetEta.push_back(jetEta);
-            recoJetPhi.push_back(jetPhi);
+            recoJetEtaVec.push_back(recoJetEta);
+            recoJetPhiVec.push_back(recoJetPhi);
+            recoJetPtHist->Fill(recoJetPt);
         }
 
-        numRecoJetsVec.push_back(numRecoJets);
+        //numRecoJetsVec.push_back(numRecoJets);
         numRecoJetsHist->Fill(numRecoJets);
 
         tree1->GetEntry(i);
@@ -86,43 +96,63 @@ int main(int argc, char const *argv[]) {
         }
 
         // cluster partons into jet with anti-kt algorithm
-        double R = 0.7;
+        double R = 0.4;
         JetDefinition jet_def(antikt_algorithm, R);
         ClusterSequence cs(particles, jet_def);
-        std::vector<PseudoJet> jets = sorted_by_pt(cs.inclusive_jets());
+        std::vector<PseudoJet> partonJets = sorted_by_pt(cs.inclusive_jets());
 
-        numGenJetsVec.push_back(jets.size());
-        numGenJetsHist->Fill(jets.size());
+        //numGenJetsVec.push_back(jets.size());
+        numPartonJetsHist->Fill(partonJets.size());
 
         // get eta and phi from parton gets
-        for (int j=0; j < jets.size(); j++) {
-            genJetEta.push_back(jets[j].rap());
-            genJetPhi.push_back(jets[j].phi());
+        int numPartonJetsCut = 0;
+        for (int j=0; j < partonJets.size(); j++) {
+            partonJetEtaVec.push_back(partonJets[j].rap());
+            partonJetPhiVec.push_back(partonJets[j].phi());
+            partonJetPtHist->Fill(partonJets[j].pt());
+            if (partonJets[j].pt() > 20.0){
+                numPartonJetsCut++;
+                partonJetPtCutHist->Fill(partonJets[j].pt());
+            }
         }
+        numPartonJetsCutHist->Fill(numPartonJetsCut);
 
         // go through each reco Jet and see how many matches there are
-        if (recoJetEta.size() > 0) {
-            for (int j=0; j < recoJetEta.size(); j++) {
-                float recoEta = recoJetEta[j];
-                float recoPhi = recoJetPhi[j];
+        if (recoJetEtaVec.size() > 0) {
+            for (int j=0; j < recoJetEtaVec.size(); j++) {
+                float recoEta = recoJetEtaVec[j];
+                float recoPhi = recoJetPhiVec[j];
                 int matches = 0;
                 float mindR = 10.0;
-                for (int k=0; k < genJetEta.size(); k++) {
-                    float dR = deltaR(recoEta, recoPhi, genJetEta[k], genJetPhi[k]);
+                for (int k=0; k < partonJetEtaVec.size(); k++) {
+                    float dR = deltaR(recoEta, recoPhi, partonJetEtaVec[k], partonJetPhiVec[k]);
                     if (dR < mindR) mindR = dR;
                     if (dR < 0.4) matches++;
                 }
-                minDeltaRHist->Fill(mindR);
+                minDeltaRPartonRecoHist->Fill(mindR);
+                minDeltaRPartonRecoHistZoom->Fill(mindR);
 
             }
         }
     }
-    numRecoJetsHist->Write();
-    numGenJetsHist->Write();
-    minDeltaRHist->Write();
-    delete numGenJetsHist;
-    delete numRecoJetsHist;
-    delete minDeltaRHist;
 
+    numPartonJetsHist->Write();
+    numPartonJetsCutHist->Write();
+    numRecoJetsHist->Write();
+    minDeltaRPartonRecoHist->Write();
+    minDeltaRPartonRecoHistZoom->Write();
+    recoJetPtHist->Write();
+    partonJetPtHist->Write();
+    partonJetPtCutHist->Write();
+
+    delete numPartonJetsHist;
+    delete numPartonJetsCutHist;
+    delete numRecoJetsHist;
+    delete minDeltaRPartonRecoHist;
+    delete minDeltaRPartonRecoHistZoom;
+    delete recoJetPtHist;
+    delete partonJetPtHist;
+    delete partonJetPtCutHist;
+    
     return 0;
 }
