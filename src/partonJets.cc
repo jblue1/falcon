@@ -4,8 +4,8 @@
 #include "TH1I.h"
 #include "TH1F.h"
 #include <cmath>
-#include <assert.h>
-
+#include <fstream>
+#include <cassert>
 
 using namespace fastjet;
 
@@ -18,7 +18,7 @@ int main(int argc, char const *argv[]) {
     TFile f("../data/JetNtuple_RunIISummer16_13TeV_MC.root");
     TDirectoryFile* df = (TDirectoryFile*) f.Get("AK4jets");
     TTree* tree1 = (TTree*) df->Get("genPartTree");
-    TTree* tree2 = (TTree*) df->Get("jetTree");
+    TTree* tree2 = (TTree*) df->Get("jetTree;3");
     // set up histagrams
     TH1* numPartonJetsHist = new TH1I("numPartonJetsHist", "Distribution of parton jets per event", 31, 0, 30);
     TH1* numPartonJetsCutHist = new TH1I("numPartonJetsCutHist", "Distribution of parton jets with Pt > 20GeV per event", 31, 0, 30);
@@ -29,6 +29,10 @@ int main(int argc, char const *argv[]) {
     TH1* recoJetPtHist = new TH1F("recoJetPtHist", "Reco jet Pt distribution", 200, 0.0, 1000.0);
     TH1* partonJetPtHist = new TH1F("partonJetPtHist", "Parton jet Pt disribution", 201, 0.0, 1000.0);
     TFile h("../data/histos.root", "new");
+
+    // file to write data as txt
+    std::ofstream write_out("../data/jetInfo.txt");
+    assert(write_out.is_open());
 
     // genPartTree variables
     std::vector<Int_t>* pdgId = 0;
@@ -62,36 +66,40 @@ int main(int argc, char const *argv[]) {
     tree2->SetBranchAddress("jetPhi", &recoJetPhi);
     tree2->SetBranchAddress("jetPt", &recoJetPt);
 
+//    tree3->SetBranchAddress("event", &recoJetEvent);
     int numEvents = tree1->GetEntries();
+    int numRecoJetsTot = tree2->GetEntries();
     int jetIndex = 0;
 
     tree2->GetEntry(jetIndex);
 
     // loop through events
-    for (int i=0; i < numEvents; i++) {
+    for (size_t i=0; i < numEvents; i++) {
         std::vector<float> recoJetEtaVec;
         std::vector<float> recoJetPhiVec;
         std::vector<float> partonJetEtaVec;
         std::vector<float> partonJetPhiVec;
 
-        // get eta and phi fro reco jets
+        tree1->GetEntry(i);
+        // get eta and phi from reco jets
         int numRecoJets = 0;
-        while (recoJetEvent == event) {
+        while (true) {
             jetIndex++;
-            numRecoJets++;
             tree2->GetEntry(jetIndex);
+            if (recoJetEvent != event || jetIndex > numRecoJetsTot) break; //TODO: This seems a little hacky, figure out better logic
+            numRecoJets++;
             recoJetEtaVec.push_back(recoJetEta);
             recoJetPhiVec.push_back(recoJetPhi);
             recoJetPtHist->Fill(recoJetPt);
+            write_out << 2 << " " << recoJetEvent << " " << recoJetPt << " " << recoJetEta << " " << recoJetPhi << "\n";
+
         }
 
-        //numRecoJetsVec.push_back(numRecoJets);
         numRecoJetsHist->Fill(numRecoJets);
 
-        tree1->GetEntry(i);
         int numPartons = pdgId->size();
         std::vector<PseudoJet> particles;
-        for (int j=0; j < numPartons; j++) {
+        for (size_t j=0; j < numPartons; j++) {
             particles.push_back( PseudoJet( (*Px)[j], (*Py)[j], (*Pz)[j], (*E)[j]) );
         }
 
@@ -106,10 +114,11 @@ int main(int argc, char const *argv[]) {
 
         // get eta and phi from parton gets
         int numPartonJetsCut = 0;
-        for (int j=0; j < partonJets.size(); j++) {
+        for (size_t j=0; j < partonJets.size(); j++) {
             partonJetEtaVec.push_back(partonJets[j].rap());
             partonJetPhiVec.push_back(partonJets[j].phi());
             partonJetPtHist->Fill(partonJets[j].pt());
+            write_out << 0 << " " << event << " " << partonJets[j].pt() << " " << partonJets[j].rap() << " " << partonJets[j].phi() << "\n";
             if (partonJets[j].pt() > 20.0){
                 numPartonJetsCut++;
                 partonJetPtCutHist->Fill(partonJets[j].pt());
@@ -119,12 +128,12 @@ int main(int argc, char const *argv[]) {
 
         // go through each reco Jet and see how many matches there are
         if (recoJetEtaVec.size() > 0) {
-            for (int j=0; j < recoJetEtaVec.size(); j++) {
+            for (size_t j=0; j < recoJetEtaVec.size(); j++) {
                 float recoEta = recoJetEtaVec[j];
                 float recoPhi = recoJetPhiVec[j];
                 int matches = 0;
                 float mindR = 10.0;
-                for (int k=0; k < partonJetEtaVec.size(); k++) {
+                for (size_t k=0; k < partonJetEtaVec.size(); k++) {
                     float dR = deltaR(recoEta, recoPhi, partonJetEtaVec[k], partonJetPhiVec[k]);
                     if (dR < mindR) mindR = dR;
                     if (dR < 0.4) matches++;
@@ -153,6 +162,8 @@ int main(int argc, char const *argv[]) {
     delete recoJetPtHist;
     delete partonJetPtHist;
     delete partonJetPtCutHist;
-    
+
+    write_out.close();
+
     return 0;
 }
