@@ -1,5 +1,6 @@
-# root files
+# data files
 *.root
+*.txt
 
 # executables
 *.out
