@@ -15,7 +15,7 @@ float deltaR(float eta1, float phi1, float eta2, float phi2) {
 
 int main(int argc, char const *argv[]) {
     // open data file and get trees
-    TFile f("../data/JetNtuple_RunIISummer16_13TeV_MC.root");
+    TFile f("./data/JetNtuple_RunIISummer16_13TeV_MC.root");
     TDirectoryFile* df = (TDirectoryFile*) f.Get("AK4jets");
     TTree* tree1 = (TTree*) df->Get("genPartTree");
     TTree* tree2 = (TTree*) df->Get("jetTree;3");
@@ -28,10 +28,12 @@ int main(int argc, char const *argv[]) {
     TH1* partonJetPtCutHist = new TH1F("partonJetPtCutHist", "Parton jet Pt distribution (Pt > 20GeV)", 201, 0.0, 1000.0);
     TH1* recoJetPtHist = new TH1F("recoJetPtHist", "Reco jet Pt distribution", 200, 0.0, 1000.0);
     TH1* partonJetPtHist = new TH1F("partonJetPtHist", "Parton jet Pt disribution", 201, 0.0, 1000.0);
-    TFile h("../data/histos.root", "new");
+    TH1* minDeltaRPartonGenHist = new TH1F("minDeltaRPartonGenHist", "Distribution of min delta R for each gen jet", 100, 0.0, 10.0);
+    TH1* minDeltaRPartonRecoGenFoundHist = new TH1F("minDeltaRPartonRecoGenFoundHist", "Distribution of min delta R for each reco jet with gen jet match", 100, 0.0, 10.0);
+    TFile h("./data/histos.root", "new");
 
     // file to write data as txt
-    std::ofstream write_out("../data/jetInfo.txt");
+    std::ofstream write_out("./data/jetInfo.txt");
     assert(write_out.is_open());
 
     // genPartTree variables
@@ -48,10 +50,14 @@ int main(int argc, char const *argv[]) {
     Float_t recoJetEta = 0;
     Float_t recoJetPhi = 0;
     Float_t recoJetPt = 0;
+    Int_t recoJetGenMatch = 0;
+    Float_t genJetPt = 0;
+    Float_t genJetEta = 0;
+    Float_t genJetPhi = 0;
 
     // hold the number of jets in each event for comparison
-    std::vector<int> numGenJetsVec;
-    std::vector<int> numRecoJetsVec;
+    //std::vector<int> numGenJetsVec;
+    //std::vector<int> numRecoJetsVec;
 
     tree1->SetBranchAddress("genPartPdgId", &pdgId);
     tree1->SetBranchAddress("genPartPx", &Px);
@@ -65,8 +71,11 @@ int main(int argc, char const *argv[]) {
     tree2->SetBranchAddress("jetEta", &recoJetEta);
     tree2->SetBranchAddress("jetPhi", &recoJetPhi);
     tree2->SetBranchAddress("jetPt", &recoJetPt);
+    tree2->SetBranchAddress("jetGenMatch", &recoJetGenMatch);
+    tree2->SetBranchAddress("genJetPt", &genJetPt);
+    tree2->SetBranchAddress("genJetEta", &genJetEta);
+    tree2->SetBranchAddress("genJetPhi", &genJetPhi);
 
-//    tree3->SetBranchAddress("event", &recoJetEvent);
     int numEvents = tree1->GetEntries();
     int numRecoJetsTot = tree2->GetEntries();
     int jetIndex = 0;
@@ -79,8 +88,12 @@ int main(int argc, char const *argv[]) {
         std::vector<float> recoJetPhiVec;
         std::vector<float> partonJetEtaVec;
         std::vector<float> partonJetPhiVec;
+        std::vector<int> recoJetGenMatchVec;
+        std::vector<int> genJetEtaVec;
+        std::vector<int> genJetPhiVec;
 
         tree1->GetEntry(i);
+         
         // get eta and phi from reco jets
         int numRecoJets = 0;
         while (true) {
@@ -91,6 +104,16 @@ int main(int argc, char const *argv[]) {
             recoJetEtaVec.push_back(recoJetEta);
             recoJetPhiVec.push_back(recoJetPhi);
             recoJetPtHist->Fill(recoJetPt);
+            recoJetGenMatchVec.push_back(recoJetGenMatch);
+            if (recoJetGenMatch == 1) {
+                genJetEtaVec.push_back(genJetEta);
+                genJetPhiVec.push_back(genJetPhi);
+            }
+            else {
+                genJetEtaVec.push_back(0.0/0.0);
+                genJetPhiVec.push_back(0.0/0.0);
+
+            }
             write_out << 2 << " " << recoJetEvent << " " << recoJetPt << " " << recoJetEta << " " << recoJetPhi << "\n";
 
         }
@@ -128,18 +151,25 @@ int main(int argc, char const *argv[]) {
 
         // go through each reco Jet and see how many matches there are
         if (recoJetEtaVec.size() > 0) {
-            for (size_t j=0; j < recoJetEtaVec.size(); j++) {
+            for (int j=0; j < recoJetEtaVec.size(); j++) {
                 float recoEta = recoJetEtaVec[j];
                 float recoPhi = recoJetPhiVec[j];
+                float genEta = genJetEtaVec[j];
+                float genPhi = genJetPhiVec[j];
                 int matches = 0;
-                float mindR = 10.0;
+                float minDRPartonsReco = 10.0;
+                float minDRPartonsGen = 10.0;
                 for (size_t k=0; k < partonJetEtaVec.size(); k++) {
-                    float dR = deltaR(recoEta, recoPhi, partonJetEtaVec[k], partonJetPhiVec[k]);
-                    if (dR < mindR) mindR = dR;
-                    if (dR < 0.4) matches++;
+                    float dRPartonsReco = deltaR(recoEta, recoPhi, partonJetEtaVec[k], partonJetPhiVec[k]);
+                    float dRPartonsGen = deltaR(genEta, genPhi, partonJetEtaVec[k], partonJetPhiVec[k]);
+                    if (dRPartonsReco < minDRPartonsReco) minDRPartonsReco = dRPartonsReco;
+                    if (dRPartonsGen < minDRPartonsGen) minDRPartonsGen = dRPartonsGen;
+                    if (dRPartonsReco < 0.4) matches++;
                 }
-                minDeltaRPartonRecoHist->Fill(mindR);
-                minDeltaRPartonRecoHistZoom->Fill(mindR);
+                minDeltaRPartonRecoHist->Fill(minDRPartonsReco);
+                minDeltaRPartonRecoHistZoom->Fill(minDRPartonsReco);
+                if (!isnan(genEta)) minDeltaRPartonGenHist->Fill(minDRPartonsGen);
+                if (recoJetGenMatchVec[j] == 1) minDeltaRPartonRecoGenFoundHist->Fill(minDRPartonsReco);
 
             }
         }
@@ -153,6 +183,8 @@ int main(int argc, char const *argv[]) {
     recoJetPtHist->Write();
     partonJetPtHist->Write();
     partonJetPtCutHist->Write();
+    minDeltaRPartonGenHist->Write();
+    minDeltaRPartonRecoGenFoundHist->Write();
 
     delete numPartonJetsHist;
     delete numPartonJetsCutHist;
@@ -162,6 +194,8 @@ int main(int argc, char const *argv[]) {
     delete recoJetPtHist;
     delete partonJetPtHist;
     delete partonJetPtCutHist;
+    delete minDeltaRPartonGenHist;
+    delete minDeltaRPartonRecoGenFoundHist;
 
     write_out.close();
 
