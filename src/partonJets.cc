@@ -19,10 +19,6 @@ float deltaR(float eta1, float phi1, float eta2, float phi2) {
 }
 
 int main(int argc, char const *argv[]) {
-    //test angleDif
-    std::cout << "dif between 0.1 and 0.1: " << angleDif(0.1, 0.1) << std::endl;
-    std::cout << "dif between 1 and -1: " << angleDif(1.0, -1.0) << std::endl;
-    std::cout << "dif between -3.1 and 3.1" << angleDif(3.1, -3.1) << std::endl;
     // open data file and get trees
     TFile f("./data/JetNtuple_RunIISummer16_13TeV_MC.root");
     TDirectoryFile* df = (TDirectoryFile*) f.Get("AK4jets");
@@ -41,7 +37,7 @@ int main(int argc, char const *argv[]) {
     TH1* minDeltaRPartonRecoGenFoundHist = new TH1F("minDeltaRPartonRecoGenFoundHist", "Distribution of min delta R for each reco jet with gen jet match", 100, 0.0, 10.0);
     TH1* partonJetPhiHist = new TH1F("partonJetPhiHist", "Distribution of phi for parton jets", 100, -3.5, 6.5);
     TH1* recoJetPhiHist = new TH1F("recoJetPhiHist", "Distribution of phi for reco jets", 100, -3.5, 6.5);
-    TH1* numMatchesHist = new TH1I("numMatches", "Number of matches (dR < 0.4) for each reco jet", 100, 0, 10);
+    TH1* numMatchesHist = new TH1I("numMatches", "Number of matches (dR < 0.35) for each reco jet", 10, 0, 10);
     TH1* recoJetEtaHist = new TH1F("recoJetEtaHist", "Distribution of eta of recoJets", 100, -5, 5);
     TFile h("./data/histos.root", "new");
 
@@ -123,6 +119,7 @@ int main(int argc, char const *argv[]) {
             if (recoJetGenMatch == 1) {
                 genJetEtaVec.push_back(genJetEta);
                 genJetPhiVec.push_back(genJetPhi);
+                write_out << 1 << " " << recoJetEvent << " " << recoJetGenMatch << " " << genJetPt << " " << genJetEta << " " << genJetPhi << "\n";
             }
             else {
                 genJetEtaVec.push_back(0.0/0.0);
@@ -180,13 +177,15 @@ int main(int argc, char const *argv[]) {
                     float dRPartonsGen = deltaR(genEta, genPhi, partonJetEtaVec[k], partonJetPhiVec[k]);
                     if (dRPartonsReco < minDRPartonsReco) minDRPartonsReco = dRPartonsReco;
                     if (dRPartonsGen < minDRPartonsGen) minDRPartonsGen = dRPartonsGen;
-                    if (dRPartonsReco < 0.4) matches++;
+                    if (dRPartonsReco < 0.35) matches++;
                 }
                 numMatchesHist->Fill(matches);
                 minDeltaRPartonRecoHist->Fill(minDRPartonsReco);
                 minDeltaRPartonRecoHistZoom->Fill(minDRPartonsReco);
-                if (!isnan(genEta)) minDeltaRPartonGenHist->Fill(minDRPartonsGen);
-                if (recoJetGenMatchVec[j] == 1) minDeltaRPartonRecoGenFoundHist->Fill(minDRPartonsReco);
+                if (recoJetGenMatchVec[j] == 1){
+                    minDeltaRPartonRecoGenFoundHist->Fill(minDRPartonsReco);
+                    minDeltaRPartonGenHist->Fill(minDRPartonsGen);
+                }
 
             }
         }
