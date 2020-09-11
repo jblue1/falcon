@@ -4,3 +4,6 @@
 
 # executables
 *.out
+
+#notebook checkpoints
+*.ipynb_checkpoints
