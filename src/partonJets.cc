@@ -9,11 +9,20 @@
 
 using namespace fastjet;
 
+float angleDif(float angle1,float angle2) {
+    return atan2(sin(angle1-angle2), cos(angle1-angle2));
+}
+
+
 float deltaR(float eta1, float phi1, float eta2, float phi2) {
-    return sqrt( pow(eta2 - eta1, 2) + pow(phi2 - phi1, 2));
+    return sqrt( pow(eta2 - eta1, 2) + pow(angleDif(phi2, phi1), 2));
 }
 
 int main(int argc, char const *argv[]) {
+    //test angleDif
+    std::cout << "dif between 0.1 and 0.1: " << angleDif(0.1, 0.1) << std::endl;
+    std::cout << "dif between 1 and -1: " << angleDif(1.0, -1.0) << std::endl;
+    std::cout << "dif between -3.1 and 3.1" << angleDif(3.1, -3.1) << std::endl;
     // open data file and get trees
     TFile f("./data/JetNtuple_RunIISummer16_13TeV_MC.root");
     TDirectoryFile* df = (TDirectoryFile*) f.Get("AK4jets");
@@ -24,12 +33,16 @@ int main(int argc, char const *argv[]) {
     TH1* numPartonJetsCutHist = new TH1I("numPartonJetsCutHist", "Distribution of parton jets with Pt > 20GeV per event", 31, 0, 30);
     TH1* numRecoJetsHist = new TH1I("numRecoJetsHist", "Distribution of reco jets per event", 31, 0, 30);
     TH1* minDeltaRPartonRecoHist = new TH1F("minDeltaRPartonRecoHist", "Distribution of min delta R for each reco jet", 100, 0.0, 10.0);
-    TH1* minDeltaRPartonRecoHistZoom = new TH1F("minDeltaRPartonRecoHistZoom", "Distribution of min delta R for each reco jet", 100, 0.0, 2.0);
+    TH1* minDeltaRPartonRecoHistZoom = new TH1F("minDeltaRPartonRecoHistZoom", "Distribution of min delta R for each reco jet", 100, 0.0, 1.0);
     TH1* partonJetPtCutHist = new TH1F("partonJetPtCutHist", "Parton jet Pt distribution (Pt > 20GeV)", 201, 0.0, 1000.0);
     TH1* recoJetPtHist = new TH1F("recoJetPtHist", "Reco jet Pt distribution", 200, 0.0, 1000.0);
     TH1* partonJetPtHist = new TH1F("partonJetPtHist", "Parton jet Pt disribution", 201, 0.0, 1000.0);
     TH1* minDeltaRPartonGenHist = new TH1F("minDeltaRPartonGenHist", "Distribution of min delta R for each gen jet", 100, 0.0, 10.0);
     TH1* minDeltaRPartonRecoGenFoundHist = new TH1F("minDeltaRPartonRecoGenFoundHist", "Distribution of min delta R for each reco jet with gen jet match", 100, 0.0, 10.0);
+    TH1* partonJetPhiHist = new TH1F("partonJetPhiHist", "Distribution of phi for parton jets", 100, -3.5, 6.5);
+    TH1* recoJetPhiHist = new TH1F("recoJetPhiHist", "Distribution of phi for reco jets", 100, -3.5, 6.5);
+    TH1* numMatchesHist = new TH1I("numMatches", "Number of matches (dR < 0.4) for each reco jet", 100, 0, 10);
+    TH1* recoJetEtaHist = new TH1F("recoJetEtaHist", "Distribution of eta of recoJets", 100, -5, 5);
     TFile h("./data/histos.root", "new");
 
     // file to write data as txt
@@ -103,7 +116,9 @@ int main(int argc, char const *argv[]) {
             numRecoJets++;
             recoJetEtaVec.push_back(recoJetEta);
             recoJetPhiVec.push_back(recoJetPhi);
+            recoJetPhiHist->Fill(recoJetPhi);
             recoJetPtHist->Fill(recoJetPt);
+            recoJetEtaHist->Fill(recoJetEta);
             recoJetGenMatchVec.push_back(recoJetGenMatch);
             if (recoJetGenMatch == 1) {
                 genJetEtaVec.push_back(genJetEta);
@@ -114,7 +129,7 @@ int main(int argc, char const *argv[]) {
                 genJetPhiVec.push_back(0.0/0.0);
 
             }
-            write_out << 2 << " " << recoJetEvent << " " << recoJetPt << " " << recoJetEta << " " << recoJetPhi << "\n";
+            write_out << 2 << " " << recoJetEvent << " " << recoJetGenMatch << " " << recoJetPt << " " << recoJetEta << " " << recoJetPhi << "\n";
 
         }
 
@@ -139,9 +154,10 @@ int main(int argc, char const *argv[]) {
         int numPartonJetsCut = 0;
         for (size_t j=0; j < partonJets.size(); j++) {
             partonJetEtaVec.push_back(partonJets[j].rap());
-            partonJetPhiVec.push_back(partonJets[j].phi());
+            partonJetPhiVec.push_back(partonJets[j].phi_std());
+            partonJetPhiHist->Fill(partonJets[j].phi_std());
             partonJetPtHist->Fill(partonJets[j].pt());
-            write_out << 0 << " " << event << " " << partonJets[j].pt() << " " << partonJets[j].rap() << " " << partonJets[j].phi() << "\n";
+            write_out << 0 << " " << event << " " << -1 << " " << partonJets[j].pt() << " " << partonJets[j].rap() << " " << partonJets[j].phi_std() << "\n";
             if (partonJets[j].pt() > 20.0){
                 numPartonJetsCut++;
                 partonJetPtCutHist->Fill(partonJets[j].pt());
@@ -166,6 +182,7 @@ int main(int argc, char const *argv[]) {
                     if (dRPartonsGen < minDRPartonsGen) minDRPartonsGen = dRPartonsGen;
                     if (dRPartonsReco < 0.4) matches++;
                 }
+                numMatchesHist->Fill(matches);
                 minDeltaRPartonRecoHist->Fill(minDRPartonsReco);
                 minDeltaRPartonRecoHistZoom->Fill(minDRPartonsReco);
                 if (!isnan(genEta)) minDeltaRPartonGenHist->Fill(minDRPartonsGen);
@@ -185,6 +202,10 @@ int main(int argc, char const *argv[]) {
     partonJetPtCutHist->Write();
     minDeltaRPartonGenHist->Write();
     minDeltaRPartonRecoGenFoundHist->Write();
+    partonJetPhiHist->Write();
+    recoJetPhiHist->Write();
+    numMatchesHist->Write();
+    recoJetEtaHist->Write();
 
     delete numPartonJetsHist;
     delete numPartonJetsCutHist;
@@ -196,6 +217,10 @@ int main(int argc, char const *argv[]) {
     delete partonJetPtCutHist;
     delete minDeltaRPartonGenHist;
     delete minDeltaRPartonRecoGenFoundHist;
+    delete partonJetPhiHist;
+    delete recoJetPhiHist;
+    delete numMatchesHist;
+    delete recoJetEtaHist;
 
     write_out.close();
 
