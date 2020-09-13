@@ -6,25 +6,59 @@
 #include <cmath>
 #include <fstream>
 #include <cassert>
+#include <string>
 
 using namespace fastjet;
 
+/**
+ * Calculate the difference between two angles in the range (-pi, pi).
+ */
 float angleDif(float angle1,float angle2) {
     return atan2(sin(angle1-angle2), cos(angle1-angle2));
 }
 
-
+/**
+ * Calculate delta R for two points in eta phi space.
+ */
 float deltaR(float eta1, float phi1, float eta2, float phi2) {
     return sqrt( pow(eta2 - eta1, 2) + pow(angleDif(phi2, phi1), 2));
 }
 
+/**
+ * Describe parameters taken and print erros if parameters are incorrectly
+ * given.
+ */
+void usage(std::ostream &out, const char *msg) {
+    out << msg << std::endl;
+    out << std::endl;
+    out << "    Usage:" << std::endl;
+    out << "            makeJets.out data histos txt" << std::endl;
+    out << "    data        - root file from JetNtuple analyzer to use" << std::endl;
+    out << "    histos      - root file to write histograms to" << std::endl;
+    out << "    txt         - text file to write jet eta phi data to" << std::endl;
+    exit(1);
+}
+
 int main(int argc, char const *argv[]) {
+    if (argc != 4) {
+        usage(std::cerr, "Incorrect number of parameters given.");
+    }
+
+    std::string  dataFile(argv[1]);
+    std::string  histosFile(argv[2]);
+    std::string  txtFile(argv[3]);
+    std::string dataPath = "./data/root/" + dataFile;
+    std::string histosPath = "./data/root/" + histosFile;
+    std::string txtPath = "./data/txt/" + txtFile;
     // open data file and get trees
-    TFile f("./data/JetNtuple_RunIISummer16_13TeV_MC.root");
+    
+    //TFile f("./data/root/" + dataFile);
+    TFile f(dataPath.c_str());
     TDirectoryFile* df = (TDirectoryFile*) f.Get("AK4jets");
     TTree* tree1 = (TTree*) df->Get("genPartTree");
-    TTree* tree2 = (TTree*) df->Get("jetTree;3");
-    // set up histagrams
+    TTree* tree2 = (TTree*) df->Get("jetTree");
+
+    // set up histograms
     TH1* numPartonJetsHist = new TH1I("numPartonJetsHist", "Distribution of parton jets per event", 31, 0, 30);
     TH1* numPartonJetsCutHist = new TH1I("numPartonJetsCutHist", "Distribution of parton jets with Pt > 20GeV per event", 31, 0, 30);
     TH1* numRecoJetsHist = new TH1I("numRecoJetsHist", "Distribution of reco jets per event", 31, 0, 30);
@@ -39,10 +73,11 @@ int main(int argc, char const *argv[]) {
     TH1* recoJetPhiHist = new TH1F("recoJetPhiHist", "Distribution of phi for reco jets", 100, -3.5, 6.5);
     TH1* numMatchesHist = new TH1I("numMatches", "Number of matches (dR < 0.35) for each reco jet", 10, 0, 10);
     TH1* recoJetEtaHist = new TH1F("recoJetEtaHist", "Distribution of eta of recoJets", 100, -5, 5);
-    TFile h("./data/histos.root", "new");
+    TH1* numMatchesPartonJetHist = new TH1F("numMatchesPartonJetHist", "Number of matches (dR < 0.35) for each parton jet with Pt > 20GeV", 5, 0, 5);
+    TFile h(histosPath.c_str(), "new");
 
     // file to write data as txt
-    std::ofstream write_out("./data/jetInfo.txt");
+    std::ofstream write_out("./data/txt/" + txtFile);
     assert(write_out.is_open());
 
     // genPartTree variables
@@ -52,6 +87,10 @@ int main(int argc, char const *argv[]) {
     std::vector<Float_t>* Pz = 0;
     std::vector<Float_t>* E = 0;
     std::vector<Float_t>* Pt = 0;
+    std::vector<Float_t>* Vx = 0;
+    std::vector<Float_t>* Vy = 0;
+    std::vector<Float_t>* Vz = 0;
+
 
     // jetTree variables
     ULong64_t event = 0;
@@ -140,9 +179,9 @@ int main(int argc, char const *argv[]) {
 
         // cluster partons into jet with anti-kt algorithm
         double R = 0.4;
-        JetDefinition jet_def(antikt_algorithm, R);
-        ClusterSequence cs(particles, jet_def);
-        std::vector<PseudoJet> partonJets = sorted_by_pt(cs.inclusive_jets());
+        JetDefinition jet_def(antikt_algorithm, R); // define jet algorithm as anti-kt with R=0.4
+        ClusterSequence cs(particles, jet_def); // run the clustering
+        std::vector<PseudoJet> partonJets = sorted_by_pt(cs.inclusive_jets()); // sort jets by Pt
 
         //numGenJetsVec.push_back(jets.size());
         numPartonJetsHist->Fill(partonJets.size());
@@ -172,9 +211,9 @@ int main(int argc, char const *argv[]) {
                 int matches = 0;
                 float minDRPartonsReco = 10.0;
                 float minDRPartonsGen = 10.0;
-                for (size_t k=0; k < partonJetEtaVec.size(); k++) {
-                    float dRPartonsReco = deltaR(recoEta, recoPhi, partonJetEtaVec[k], partonJetPhiVec[k]);
-                    float dRPartonsGen = deltaR(genEta, genPhi, partonJetEtaVec[k], partonJetPhiVec[k]);
+                for (size_t k=0; k < partonJets.size(); k++) {
+                    float dRPartonsReco = deltaR(recoEta, recoPhi, partonJets[k].rap(), partonJets[k].phi_std());
+                    float dRPartonsGen = deltaR(genEta, genPhi, partonJets[k].rap(), partonJets[k].phi_std());
                     if (dRPartonsReco < minDRPartonsReco) minDRPartonsReco = dRPartonsReco;
                     if (dRPartonsGen < minDRPartonsGen) minDRPartonsGen = dRPartonsGen;
                     if (dRPartonsReco < 0.35) matches++;
@@ -186,7 +225,20 @@ int main(int argc, char const *argv[]) {
                     minDeltaRPartonRecoGenFoundHist->Fill(minDRPartonsReco);
                     minDeltaRPartonGenHist->Fill(minDRPartonsGen);
                 }
-
+            }
+        }
+        if (partonJets.size() > 0) {
+            for (int j=0; j < partonJets.size(); j++) {
+                if (partonJets[j].pt() > 20) {
+                    float partonEta = partonJets[j].rap();
+                    float partonPhi = partonJets[j].phi_std();
+                    int matches = 0;
+                    for (int k=0; k < recoJetEtaVec.size(); k++) {
+                        float dR = deltaR(recoJetEtaVec[k], recoJetPhiVec[k], partonEta, partonPhi);
+                        if (dR < 0.35) matches++;
+                    }
+                    numMatchesPartonJetHist->Fill(matches);
+                }
             }
         }
     }
@@ -205,6 +257,7 @@ int main(int argc, char const *argv[]) {
     recoJetPhiHist->Write();
     numMatchesHist->Write();
     recoJetEtaHist->Write();
+    numMatchesPartonJetHist->Write();
 
     delete numPartonJetsHist;
     delete numPartonJetsCutHist;
@@ -220,6 +273,7 @@ int main(int argc, char const *argv[]) {
     delete recoJetPhiHist;
     delete numMatchesHist;
     delete recoJetEtaHist;
+    delete numMatchesPartonJetHist;
 
     write_out.close();
 
