@@ -7,8 +7,18 @@
 #include <fstream>
 #include <cassert>
 #include <string>
+#include <numeric>
 
 using namespace fastjet;
+
+/**
+ * Calculate the average value of a vector
+ */
+float vecAvg(std::vector<float> &vec) {
+    float numerator = std::accumulate(vec.begin(), vec.end(), 0.0);
+    int denominator = (float) vec.size();
+    return (float) numerator/denominator;
+}
 
 /**
  * Calculate the difference between two angles in the range (-pi, pi).
@@ -114,6 +124,9 @@ int main(int argc, char const *argv[]) {
     tree1->SetBranchAddress("genPartE", &E);
     tree1->SetBranchAddress("event", &event);
     tree1->SetBranchAddress("genPartPt", &Pt);
+    tree1->SetBranchAddress("genPartVx", &Vx);
+    tree1->SetBranchAddress("genPartVy", &Vy);
+    tree1->SetBranchAddress("genPartVz", &Vz);
 
     tree2->SetBranchAddress("event", &recoJetEvent);
     tree2->SetBranchAddress("jetEta", &recoJetEta);
@@ -139,7 +152,10 @@ int main(int argc, char const *argv[]) {
         std::vector<int> recoJetGenMatchVec;
         std::vector<int> genJetEtaVec;
         std::vector<int> genJetPhiVec;
-
+        std::vector<float> partonVx;
+        std::vector<float> partonVy;
+        std::vector<float> partonVz;
+        
         tree1->GetEntry(i);
          
         // get eta and phi from reco jets
@@ -158,15 +174,14 @@ int main(int argc, char const *argv[]) {
             if (recoJetGenMatch == 1) {
                 genJetEtaVec.push_back(genJetEta);
                 genJetPhiVec.push_back(genJetPhi);
-                write_out << 1 << " " << recoJetEvent << " " << recoJetGenMatch << " " << genJetPt << " " << genJetEta << " " << genJetPhi << "\n";
+                write_out << 1 << " " << recoJetEvent << " " << recoJetGenMatch << " " << genJetPt << " " << genJetEta << " " << genJetPhi << " " << 0 << " " << 0 << " " << 0 << "\n";
             }
             else {
                 genJetEtaVec.push_back(0.0/0.0);
                 genJetPhiVec.push_back(0.0/0.0);
 
             }
-            write_out << 2 << " " << recoJetEvent << " " << recoJetGenMatch << " " << recoJetPt << " " << recoJetEta << " " << recoJetPhi << "\n";
-
+            write_out << 2 << " " << recoJetEvent << " " << recoJetGenMatch << " " << recoJetPt << " " << recoJetEta << " " << recoJetPhi << " " << 0 << " " << 0 << " " << 0 << "\n";
         }
 
         numRecoJetsHist->Fill(numRecoJets);
@@ -175,13 +190,16 @@ int main(int argc, char const *argv[]) {
         std::vector<PseudoJet> particles;
         for (size_t j=0; j < numPartons; j++) {
             particles.push_back( PseudoJet( (*Px)[j], (*Py)[j], (*Pz)[j], (*E)[j]) );
+            particles[j].set_user_index(j);
         }
 
         // cluster partons into jet with anti-kt algorithm
         double R = 0.4;
         JetDefinition jet_def(antikt_algorithm, R); // define jet algorithm as anti-kt with R=0.4
         ClusterSequence cs(particles, jet_def); // run the clustering
-        std::vector<PseudoJet> partonJets = sorted_by_pt(cs.inclusive_jets()); // sort jets by Pt
+        //std::vector<PseudoJet> partonJets = sorted_by_pt(cs.inclusive_jets()); // sort jets by Pt
+
+        std::vector<PseudoJet> partonJets = cs.inclusive_jets(); // sort jets by Pt
 
         //numGenJetsVec.push_back(jets.size());
         numPartonJetsHist->Fill(partonJets.size());
@@ -189,11 +207,24 @@ int main(int argc, char const *argv[]) {
         // get eta and phi from parton gets
         int numPartonJetsCut = 0;
         for (size_t j=0; j < partonJets.size(); j++) {
+            std::vector<PseudoJet> constituents = partonJets[j].constituents();
+            std::vector<float> constitVxVec;
+            std::vector<float> constitVyVec;
+            std::vector<float> constitVzVec;
+            for (int ii=0; ii < constituents.size(); ii++) {
+                int partonIndex = constituents[ii].user_index();
+                constitVxVec.push_back((*Vx)[partonIndex]);
+                constitVyVec.push_back((*Vy)[partonIndex]);
+                constitVzVec.push_back((*Vz)[partonIndex]);
+            }
             partonJetEtaVec.push_back(partonJets[j].rap());
             partonJetPhiVec.push_back(partonJets[j].phi_std());
             partonJetPhiHist->Fill(partonJets[j].phi_std());
             partonJetPtHist->Fill(partonJets[j].pt());
-            write_out << 0 << " " << event << " " << -1 << " " << partonJets[j].pt() << " " << partonJets[j].rap() << " " << partonJets[j].phi_std() << "\n";
+            std::cout << vecAvg(constitVzVec) << std::endl;
+            write_out << 0 << " " << event << " " << -1 << " " << partonJets[j].pt() << 
+                " " << partonJets[j].rap() << " " << partonJets[j].phi_std() <<  " " << vecAvg(constitVxVec) 
+                << " " << vecAvg(constitVyVec) << " " << vecAvg(constitVzVec)<< "\n";
             if (partonJets[j].pt() > 20.0){
                 numPartonJetsCut++;
                 partonJetPtCutHist->Fill(partonJets[j].pt());
@@ -232,6 +263,7 @@ int main(int argc, char const *argv[]) {
                 if (partonJets[j].pt() > 20) {
                     float partonEta = partonJets[j].rap();
                     float partonPhi = partonJets[j].phi_std();
+                    
                     int matches = 0;
                     for (int k=0; k < recoJetEtaVec.size(); k++) {
                         float dR = deltaR(recoJetEtaVec[k], recoJetPhiVec[k], partonEta, partonPhi);
