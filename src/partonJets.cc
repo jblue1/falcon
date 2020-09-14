@@ -17,8 +17,8 @@ using namespace fastjet;
  */
 float vecAvg(std::vector<float> &vec) {
     float numerator = std::accumulate(vec.begin(), vec.end(), 0.0);
-    int denominator = (float) vec.size();
-    return (float) numerator/denominator;
+    float denominator = (float) vec.size();
+    return numerator/denominator;
 }
 
 /**
