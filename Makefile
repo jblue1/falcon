@@ -11,7 +11,7 @@ dataCut : bin/makeJets.out
 	./bin/makeJets.out JetNtuple_30GeVCut.root histosCut.root jetInfoCut.txt
 
 dataGenJets : 
-	./bin/makeJets.out JetNtuple_NoCut_wgenJets.root histosNoCut.root jetInfoNoCut.txt
+	./bin/makeJets.out JetNtuple_Cut_wgenJets.root histosNoCut.root jetInfoNoCut.txt
 
 clean :
 	rm data/histos.root
