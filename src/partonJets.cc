@@ -36,7 +36,7 @@ float deltaR(float eta1, float phi1, float eta2, float phi2) {
 }
 
 /**
- * Describe parameters taken and print erros if parameters are incorrectly
+ * Describe parameters taken and print errors if parameters are incorrectly
  * given.
  */
 void usage(std::ostream &out, const char *msg) {
@@ -46,7 +46,7 @@ void usage(std::ostream &out, const char *msg) {
     out << "            makeJets.out data histos txt" << std::endl;
     out << "    data        - root file from JetNtuple analyzer to use" << std::endl;
     out << "    histos      - root file to write histograms to" << std::endl;
-    out << "    txt         - text file to write jet eta phi data to" << std::endl;
+    out << "    txt         - text file to write jet data to" << std::endl;
     exit(1);
 }
 
@@ -84,11 +84,13 @@ int main(int argc, char const *argv[]) {
     TH1* partonJetEtaHist = new TH1F("partonJetEtaHist", "Distribution of Eta for parton jets", 100, -5, 5);
     TH1* partonJetPhiNoRecoMatchHist = new TH1F("partonJetPhiNoRecoMatchHist", "Distribution of phi for parton jets with no reco match", 100, -3.5, 3.5);
     TH1* partonJetEtaNoRecoMatchHist = new TH1F("partonJetEtaNoRecoMatchHist", "Distribution of eta for parton jets with no reco match", 100, -5, 5);
+    TH1* highestPtPartonJetNoRecoMatchHist = new TH1I("highestPtPartonJetNoRecoMatchHist)", "PGDIDs of highest pt parton in each parton jet with no reco match", 33, -6, 27);
 
     // file to write data as txt
     std::ofstream write_out("./data/txt/" + txtFile);
     assert(write_out.is_open());
     // genPartTree variables
+
     std::vector<Int_t>* pdgId = 0;
     std::vector<Float_t>* partonPx = 0;
     std::vector<Float_t>* partonPy = 0;
@@ -191,7 +193,7 @@ int main(int argc, char const *argv[]) {
         JetDefinition jet_def(antikt_algorithm, R); // define jet algorithm as anti-kt with R=0.4
         ClusterSequence cs(particles, jet_def); // run the clustering
 
-        std::vector<PseudoJet> partonJets = cs.inclusive_jets(); // get new jets 
+        std::vector<PseudoJet> partonJets = cs.inclusive_jets(); // get new jets
 
         // get vertices of parton jets (take average vx, vy, and vz of each
         // constituent parton)
@@ -232,20 +234,23 @@ int main(int argc, char const *argv[]) {
                             if (dR < minDR) minDR = dR;
                     }
                     numMatchesPartonRecoHist->Fill(recoMatches);
-                    minDRPartonsRecoHist->Fill(minDR); 
+                    minDRPartonsRecoHist->Fill(minDR);
                     if (recoMatches == 0) {
                         partonJetPtNoRecoMatchHist->Fill(partonJets[j].pt());
                         partonJetPhiNoRecoMatchHist->Fill(partonPhi);
                         partonJetEtaNoRecoMatchHist->Fill(partonEta);
                         std::vector<PseudoJet> constituents = sorted_by_pt(partonJets[j].constituents()); // get consituent partons in the jet
-                        for (int ii = 0; ii < constituents.size() - 1; ii++) {
-                            assert(constituents[ii].pt() >= constituents[ii + 1].pt());
-
+                        int index = constituents[0].user_index(); // get index of parton in jet with highest pt
+                        int partonPdgId = (*pdgId)[index];
+                        if (partonPdgId > 21 || partonPdgId < -6) {
+                            std::cout << "Parton with pdgid: " << partonPdgId << " did not have reco match" << std::endl;
                         }
+                        highestPtPartonJetNoRecoMatchHist->Fill(partonPdgId);
+
                     }
                     int genMatches = 0;
                     minDR = 10.0;
-                    for (int k=0; k < genJetPt->size(); k++) { 
+                    for (int k=0; k < genJetPt->size(); k++) {
                         if ((*genJetPt)[k] > 30) {
                             float dR = deltaR((*genJetEta)[k], (*genJetPhi)[k], partonEta, partonPhi);
                             if (dR < 0.35) genMatches++;
@@ -274,6 +279,7 @@ int main(int argc, char const *argv[]) {
     partonJetEtaHist->Write();
     partonJetPhiNoRecoMatchHist->Write();
     partonJetEtaNoRecoMatchHist->Write();
+    highestPtPartonJetNoRecoMatchHist->Write();
 
     delete numMatchesPartonRecoHist;
     delete numMatchesPartonGenHist;
@@ -287,6 +293,7 @@ int main(int argc, char const *argv[]) {
     delete partonJetEtaHist;
     delete partonJetPhiNoRecoMatchHist;
     delete partonJetEtaNoRecoMatchHist;
+    delete highestPtPartonJetNoRecoMatchHist;
 
     write_out.close();
 
