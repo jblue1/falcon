@@ -5,7 +5,7 @@ makeJets.out : src/partonJets.cc
 	$(CXX) $(CXXFLAGS) -o bin/makeJets.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
 	
 data : 
-	./bin/makeJets.out JetNtuple_NoCut.root histosNoCut.root jetInfoNoCut.txt
+	./bin/makeJets.out JetNtuple_Cut_wgenJets.root histos.root jetInfo.txt
 
 dataCut : bin/makeJets.out
 	./bin/makeJets.out JetNtuple_30GeVCut.root histosCut.root jetInfoCut.txt
