@@ -65,15 +65,25 @@ int main(int argc, char const *argv[]) {
 
     TFile f(dataPath.c_str());
     TDirectoryFile* df = (TDirectoryFile*) f.Get("AK4jets");
+    TTree* tree2 = (TTree*) df->Get("jetTree;3");
     TTree* tree1 = (TTree*) df->Get("genPartTree");
-    TTree* tree2 = (TTree*) df->Get("jetTree");
     TTree* tree3 = (TTree*) df->Get("genJetTree");
+
+
+    TFile h(histosPath.c_str(), "new");
     // set up histograms
     TH1* numMatchesPartonRecoHist = new TH1F("numMatchesPartonRecoHist", "Number of reco jet matches (dR < 0.35) for each parton jet with Pt > 20GeV", 5, 0, 5);
     TH1* numMatchesPartonGenHist = new TH1F("numMatchesPartonGenHist", "Number of gen jet matches (dR < 0.35) for each parton jet with Pt > 20GeV", 5, 0, 5);
     TH1* minDRPartonsRecoHist = new TH1F("minDRPartonsRecoHist", "Distribution of min dR for each parton jet (matching parton to reco)", 100, 0, 1.5);
     TH1* minDRPartonsGenHist = new TH1F("minDRPartonsGenHist", "Distribution of min dR for each parton jet (matching parton to gen)", 100, 0, 1.5);
-    TFile h(histosPath.c_str(), "new");
+    TH1* numPartonJetsHist = new TH1I("numPartonJetsHist", "Number of parton jets per event (Pt > 20)", 10, 0, 10);
+    TH1* numRecoJetsHist = new TH1I("numRecoJetsHist", "Number of reco jets per event", 10, 0, 10);
+    TH1* partonJetPtNoGenMatchHist = new TH1F("partonJetPtNoGenMatchHist", "Distribution of Pt for parton jets with no genJet match", 100, 0, 200);
+    TH1* partonJetPtNoRecoMatchHist = new TH1F("partonJetPtNoRecoMatchHist", "Distribution of Pt for parton jets with no recoJet match", 200, 0, 400);
+    TH1* partonJetPhiHist = new TH1F("partonJetPhiHist", "Distribution of Phi for parton jets", 100, -3.5, 3.5);
+    TH1* partonJetEtaHist = new TH1F("partonJetEtaHist", "Distribution of Eta for parton jets", 100, -5, 5);
+    TH1* partonJetPhiNoRecoMatchHist = new TH1F("partonJetPhiNoRecoMatchHist", "Distribution of phi for parton jets with no reco match", 100, -3.5, 3.5);
+    TH1* partonJetEtaNoRecoMatchHist = new TH1F("partonJetEtaNoRecoMatchHist", "Distribution of eta for parton jets with no reco match", 100, -5, 5);
 
     // file to write data as txt
     std::ofstream write_out("./data/txt/" + txtFile);
@@ -204,23 +214,30 @@ int main(int argc, char const *argv[]) {
 
         // go through each parton jet and find how many reco and gen Jet
         // matches there are (and find min dR)
+        int numPartonJets = 0;
         if (partonJets.size() > 0) {
             for (int j=0; j < partonJets.size(); j++) {
                 if (partonJets[j].pt() > 20) {
+                    numPartonJets++;
                     float partonEta = partonJets[j].rap();
                     float partonPhi = partonJets[j].phi_std();
+                    partonJetPhiHist->Fill(partonPhi);
+                    partonJetEtaHist->Fill(partonEta);
 
                     int recoMatches = 0;
                     float minDR = 10.0;
                     for (int k=0; k < recoJetEtaVec.size(); k++) {
-                        if (recoJetPtVec[k] > 30) {
                             float dR = deltaR(recoJetEtaVec[k], recoJetPhiVec[k], partonEta, partonPhi);
                             if (dR < 0.35) recoMatches++;
                             if (dR < minDR) minDR = dR;
-                        }
                     }
                     numMatchesPartonRecoHist->Fill(recoMatches);
                     minDRPartonsRecoHist->Fill(minDR); 
+                    if (recoMatches == 0) {
+                        partonJetPtNoRecoMatchHist->Fill(partonJets[j].pt());
+                        partonJetPhiNoRecoMatchHist->Fill(partonPhi);
+                        partonJetEtaNoRecoMatchHist->Fill(partonEta);
+                    }
                     int genMatches = 0;
                     minDR = 10.0;
                     for (int k=0; k < genJetPt->size(); k++) { 
@@ -232,20 +249,39 @@ int main(int argc, char const *argv[]) {
                     }
                     numMatchesPartonGenHist->Fill(genMatches);
                     minDRPartonsGenHist->Fill(minDR);
+                    if (genMatches == 0) partonJetPtNoGenMatchHist->Fill(partonJets[j].pt());
                 }
             }
         }
+        numPartonJetsHist->Fill(numPartonJets);
+        numRecoJetsHist->Fill(numRecoJets);
     }
 
     numMatchesPartonRecoHist->Write();
     numMatchesPartonGenHist->Write();
     minDRPartonsRecoHist->Write();
     minDRPartonsGenHist->Write();
+    numPartonJetsHist->Write();
+    numRecoJetsHist->Write();
+    partonJetPtNoGenMatchHist->Write();
+    partonJetPtNoRecoMatchHist->Write();
+    partonJetPhiHist->Write();
+    partonJetEtaHist->Write();
+    partonJetPhiNoRecoMatchHist->Write();
+    partonJetEtaNoRecoMatchHist->Write();
 
     delete numMatchesPartonRecoHist;
     delete numMatchesPartonGenHist;
     delete minDRPartonsRecoHist;
     delete minDRPartonsGenHist;
+    delete numPartonJetsHist;
+    delete numRecoJetsHist;
+    delete partonJetPtNoGenMatchHist;
+    delete partonJetPtNoRecoMatchHist;
+    delete partonJetPhiHist;
+    delete partonJetEtaHist;
+    delete partonJetPhiNoRecoMatchHist;
+    delete partonJetEtaNoRecoMatchHist;
 
     write_out.close();
 
