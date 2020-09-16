@@ -237,6 +237,11 @@ int main(int argc, char const *argv[]) {
                         partonJetPtNoRecoMatchHist->Fill(partonJets[j].pt());
                         partonJetPhiNoRecoMatchHist->Fill(partonPhi);
                         partonJetEtaNoRecoMatchHist->Fill(partonEta);
+                        std::vector<PseudoJet> constituents = sorted_by_pt(partonJets[j].constituents()); // get consituent partons in the jet
+                        for (int ii = 0; ii < constituents.size() - 1; ii++) {
+                            assert(constituents[ii].pt() >= constituents[ii + 1].pt());
+
+                        }
                     }
                     int genMatches = 0;
                     minDR = 10.0;
