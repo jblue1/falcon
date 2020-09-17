@@ -85,6 +85,7 @@ int main(int argc, char const *argv[]) {
     TH1* partonJetPhiNoRecoMatchHist = new TH1F("partonJetPhiNoRecoMatchHist", "Distribution of phi for parton jets with no reco match", 100, -3.5, 3.5);
     TH1* partonJetEtaNoRecoMatchHist = new TH1F("partonJetEtaNoRecoMatchHist", "Distribution of eta for parton jets with no reco match", 100, -5, 5);
     TH1* highestPtPartonJetNoRecoMatchHist = new TH1I("highestPtPartonJetNoRecoMatchHist)", "PGDIDs of highest pt parton in each parton jet with no reco match", 33, -6, 27);
+    TH1* partonNoRecoMatchPdgIdHist = new TH1I("partonNoRecoMatchPDgIdHist", "PGDIDs of partons in parton jets with no reco match", 33, -6, 27);
 
     // file to write data as txt
     std::ofstream write_out("./data/txt/" + txtFile);
@@ -240,13 +241,15 @@ int main(int argc, char const *argv[]) {
                         partonJetPhiNoRecoMatchHist->Fill(partonPhi);
                         partonJetEtaNoRecoMatchHist->Fill(partonEta);
                         std::vector<PseudoJet> constituents = sorted_by_pt(partonJets[j].constituents()); // get consituent partons in the jet
-                        int index = constituents[0].user_index(); // get index of parton in jet with highest pt
-                        int partonPdgId = (*pdgId)[index];
-                        if (partonPdgId > 21 || partonPdgId < -6) {
-                            std::cout << "Parton with pdgid: " << partonPdgId << " did not have reco match" << std::endl;
+                        for (int k=0; k<constituents.size(); k++) {
+                            int index = constituents[k].user_index(); // get index of parton in jet with highest pt
+                            int partonPdgId = (*pdgId)[index];
+                            if (partonPdgId > 21 || partonPdgId < -6) {
+                                std::cout << "Parton with pdgid: " << partonPdgId << " did not have reco match" << std::endl;
+                            }
+                            if (k == 0) highestPtPartonJetNoRecoMatchHist->Fill(partonPdgId);
+                            partonNoRecoMatchPdgIdHist->Fill(partonPdgId);
                         }
-                        highestPtPartonJetNoRecoMatchHist->Fill(partonPdgId);
-
                     }
                     int genMatches = 0;
                     minDR = 10.0;
@@ -280,6 +283,7 @@ int main(int argc, char const *argv[]) {
     partonJetPhiNoRecoMatchHist->Write();
     partonJetEtaNoRecoMatchHist->Write();
     highestPtPartonJetNoRecoMatchHist->Write();
+    partonNoRecoMatchPdgIdHist->Write();
 
     delete numMatchesPartonRecoHist;
     delete numMatchesPartonGenHist;
@@ -294,6 +298,7 @@ int main(int argc, char const *argv[]) {
     delete partonJetPhiNoRecoMatchHist;
     delete partonJetEtaNoRecoMatchHist;
     delete highestPtPartonJetNoRecoMatchHist;
+    delete partonNoRecoMatchPdgIdHist;
 
     write_out.close();
 
