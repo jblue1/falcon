@@ -1,10 +1,11 @@
 CXXFLAGS = -Wall
 ROOTFLAGS = `$(ROOTSYS)/bin/root-config --cflags --libs`
 FASTJETFLAGS = `$(FASTJETSYS)/bin/fastjet-config --cxxflags --libs --plugins`
-makeJets.out : src/partonJets.cc
+
+makeJets.out : src/partonJets.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -o bin/makeJets.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
 	
-data : 
+histos : 
 	./bin/makeJets.out JetNtuple_Cut_wgenJets.root histos.root jetInfo.txt
 
 dataCut : bin/makeJets.out
@@ -16,4 +17,4 @@ dataGenJets :
 clean :
 	rm data/histos.root
 
-.PHONY: data dataCut clean
+.PHONY: data dataCut clean histos
