@@ -22,7 +22,7 @@ int main(int arc, char const *argv[]) {
 
     std::ofstream write_out("./data/txt/" + txtFile);
     assert(write_out.is_open());
-    
+
     write_out << "The file contains 4 vectors of matched parton and gen jets. The columns are" << std::endl;
     write_out << "Px_p Py_p Pz_p E_p Px_g Py_g Pz_g E_g" << std::endl;
 
@@ -77,7 +77,7 @@ int main(int arc, char const *argv[]) {
         std::vector<PseudoJet> partonJets = cs.inclusive_jets();
 
         if (partonJets.size() > 0) {
-            for (int j=0; j< partonJets.size(); j++) { 
+            for (int j=0; j< partonJets.size(); j++) {
                 if (partonJets[j].pt() > 20) {
                     float partonEta = partonJets[j].rap();
                     float partonPhi = partonJets[j].phi_std();
@@ -93,15 +93,22 @@ int main(int arc, char const *argv[]) {
                         }
                     }
                     if (minDR < 0.35) {
-                        write_out << (*partonPx)[j] << " " << (*partonPy)[j] << " " << (*partonPz)[j]
-                            << " " << (*partonE)[j] << " " << (*genJetPx)[jetIndex] << " "
+                        write_out << partonJets[j].px() << " " << partonJets[j].py() << " " << partonJets[j].pz()
+                            << " " <<  partonJets[j].e() << " " << (*genJetPx)[jetIndex] << " "
                             << (*genJetPy)[jetIndex] << " " << (*genJetPz)[jetIndex] << " "
                             << (*genJetE)[jetIndex] << std::endl;
+                        std::cout << "Parton Pt: " << partonJets[j].pt() << std::endl;
+                        std::cout << "Gen Pt: " << (*genJetPt)[jetIndex] << std::endl;
+                        std::cout << "Parton Px: " << partonJets[j].px() << std::endl;
+                        std::cout << "Gen Px: " << (*genJetPx)[jetIndex] << std::endl;
+                        std::cout << "Parton Py: " << partonJets[j].py() << std::endl;
+                        std::cout << "Gen Py: " << (*genJetPy)[jetIndex] << std::endl;
+                        }
                     }
                 }
             }
         }
-    }
+
 
     write_out.close();
 
