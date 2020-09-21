@@ -9,7 +9,7 @@ makeData.out : src/makeData.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -o bin/makeData.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
 	
 histos : 
-	./bin/makeJets.out JetNtuple_Cut_wgenJets.root histos.root jetInfo.txt
+	./bin/makeHistos.out JetNtuple_PfCands.root histos.root jetInfo.txt
 
 data : 
 	./bin/makeData.out JetNtuple_partGenMatch.root matchData.txt
