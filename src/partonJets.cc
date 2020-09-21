@@ -44,6 +44,7 @@ int main(int argc, char const *argv[]) {
     TTree* tree2 = (TTree*) df->Get("jetTree;3");
     TTree* tree1 = (TTree*) df->Get("genPartTree");
     TTree* tree3 = (TTree*) df->Get("genJetTree");
+    TTree* tree4 = (TTree*) df->Get("pfCandTree");
 
 
     TFile h(histosPath.c_str(), "new");
@@ -62,12 +63,19 @@ int main(int argc, char const *argv[]) {
     TH1* partonJetEtaNoRecoMatchHist = new TH1F("partonJetEtaNoRecoMatchHist", "Distribution of eta for parton jets with no reco match", 100, -5, 5);
     TH1* highestPtPartonJetNoRecoMatchHist = new TH1I("highestPtPartonJetNoRecoMatchHist)", "PGDIDs of highest pt parton in each parton jet with no reco match", 33, -6, 27);
     TH1* partonNoRecoMatchPdgIdHist = new TH1I("partonNoRecoMatchPDgIdHist", "PGDIDs of partons in parton jets with no reco match", 33, -6, 27);
+    TH1* numMatchesPartonPfCandHist = new TH1F("numMatchesPartonPfCandHist", "Number of pf Cand Jet matches (dR < 0.35) for each parton jet with Pt > 20GeV", 5, 0, 5);
 
     // file to write data as txt
     std::ofstream write_out("./data/txt/" + txtFile);
     assert(write_out.is_open());
-    // genPartTree variables
 
+    //pfCandTree variables
+    std::vector<Float_t>* pfCandPx = 0;
+    std::vector<Float_t>* pfCandPy = 0;
+    std::vector<Float_t>* pfCandPz = 0;
+    std::vector<Float_t>* pfCandE = 0;
+
+    // genPartTree variables
     std::vector<Int_t>* pdgId = 0;
     std::vector<Float_t>* partonPx = 0;
     std::vector<Float_t>* partonPy = 0;
@@ -115,6 +123,13 @@ int main(int argc, char const *argv[]) {
     tree3->SetBranchAddress("genJetPhi", &genJetPhi);
     tree3->SetBranchAddress("genJetEvent", &genJetEvent);
 
+    tree4->SetBranchAddress("pfCandPx", &pfCandPx);
+    tree4->SetBranchAddress("pfCandPy", &pfCandPy);
+    tree4->SetBranchAddress("pfCandPz", &pfCandPz);
+    tree4->SetBranchAddress("pfCandE", &pfCandE);
+
+
+
     int numEvents = tree1->GetEntries();
 
     // used to break out of while loop for getting reco jet data
@@ -137,6 +152,7 @@ int main(int argc, char const *argv[]) {
 
         tree1->GetEntry(i);
         tree3->GetEntry(i);
+        tree4->GetEntry(i);
         assert(genJetEvent == partonEvent);
         // save info on genJets
         for (int j=0; j < genJetPt->size(); j++) {
@@ -172,22 +188,28 @@ int main(int argc, char const *argv[]) {
 
         std::vector<PseudoJet> partonJets = cs.inclusive_jets(); // get new jets
 
-        // get vertices of parton jets (take average vx, vy, and vz of each
+        // create vector with pf cand 4 momenta
+        int numPfCands = pfCandPx->size();
+        std::vector<PseudoJet> pfCands;
+        for (int j=0; j < numPfCands; j++) {
+            pfCands.push_back( PseudoJet((*pfCandPx)[j], (*pfCandPy)[j], (*pfCandPz)[j], (*pfCandE)[j]));
+        }
+
+        ClusterSequence pfseq(pfCands, jet_def);
+        std::vector<PseudoJet> pfJets = pfseq.inclusive_jets();
+
+        for (int j=0; j < pfJets.size(); j++) {
+            write_out << std::setprecision(10) << 3 << " " << partonEvent << " " << -1 << " " << pfJets[j].pt() <<
+                " " << pfJets[j].rap() << " " << pfJets[j].phi_std() << " " << 0 << " " << 0 << " " << 0 << "\n";
+        }
+
         // constituent parton)
         for (size_t j=0; j < partonJets.size(); j++) {
-            std::vector<PseudoJet> constituents = partonJets[j].constituents();
-            std::vector<float> constitVxVec;
-            std::vector<float> constitVyVec;
-            std::vector<float> constitVzVec;
-            for (int ii=0; ii < constituents.size(); ii++) {
-                int partonIndex = constituents[ii].user_index();
-                constitVxVec.push_back((*Vx)[partonIndex]);
-                constitVyVec.push_back((*Vy)[partonIndex]);
-                constitVzVec.push_back((*Vz)[partonIndex]);
-            }
+            std::vector<PseudoJet> constituents = sorted_by_pt(partonJets[j].constituents());
+            int index = constituents[0].user_index();
             write_out << std::setprecision(10) << 0 << " " << partonEvent << " " << -1 << " " << partonJets[j].pt() <<
-                " " << partonJets[j].rap() << " " << partonJets[j].phi_std() <<  " " << vecAvg(constitVxVec)
-                << " " << vecAvg(constitVyVec) << " " << vecAvg(constitVzVec)<< "\n";
+                " " << partonJets[j].rap() << " " << partonJets[j].phi_std() <<  " " << (*Vx)[index]
+                << " " <<(*Vy)[index] << " " << (*Vz)[index] << "\n";
         }
 
 
@@ -239,6 +261,17 @@ int main(int argc, char const *argv[]) {
                     numMatchesPartonGenHist->Fill(genMatches);
                     minDRPartonsGenHist->Fill(minDR);
                     if (genMatches == 0) partonJetPtNoGenMatchHist->Fill(partonJets[j].pt());
+
+                    int pfCandMatches = 0;
+                    minDR = 10.9;
+                    for (int k=0; k < pfJets.size(); k++) {
+                        if (pfJets[k].pt() > 30) {
+                            float dR = deltaR(pfJets[k].rap(), pfJets[k].phi_std(), partonEta, partonPhi);
+                            if (dR < 0.35) pfCandMatches++;
+                            if (dR < minDR) minDR = dR;
+                        }
+                    }
+                    numMatchesPartonPfCandHist->Fill(pfCandMatches++);
                 }
             }
         }
@@ -260,6 +293,7 @@ int main(int argc, char const *argv[]) {
     partonJetEtaNoRecoMatchHist->Write();
     highestPtPartonJetNoRecoMatchHist->Write();
     partonNoRecoMatchPdgIdHist->Write();
+    numMatchesPartonPfCandHist->Write();
 
     delete numMatchesPartonRecoHist;
     delete numMatchesPartonGenHist;
@@ -275,6 +309,7 @@ int main(int argc, char const *argv[]) {
     delete partonJetEtaNoRecoMatchHist;
     delete highestPtPartonJetNoRecoMatchHist;
     delete partonNoRecoMatchPdgIdHist;
+    delete numMatchesPartonPfCandHist;
 
     write_out.close();
 
