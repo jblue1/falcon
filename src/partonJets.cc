@@ -74,6 +74,7 @@ int main(int argc, char const *argv[]) {
     std::vector<Float_t>* pfCandPy = 0;
     std::vector<Float_t>* pfCandPz = 0;
     std::vector<Float_t>* pfCandE = 0;
+    std::vector<Int_t>* pfCandPdgId = 0;
 
     // genPartTree variables
     std::vector<Int_t>* pdgId = 0;
@@ -127,6 +128,7 @@ int main(int argc, char const *argv[]) {
     tree4->SetBranchAddress("pfCandPy", &pfCandPy);
     tree4->SetBranchAddress("pfCandPz", &pfCandPz);
     tree4->SetBranchAddress("pfCandE", &pfCandE);
+    tree4->SetBranchAddress("pfCandPdgId", &pfCandPdgId);
 
 
 
@@ -141,7 +143,8 @@ int main(int argc, char const *argv[]) {
     tree2->GetEntry(jetIndex);
 
     // loop through events
-    for (size_t i=0; i < numEvents; i++) {
+    for (size_t i=0; i < 10; i++) {
+        std::cout << "EVENT: " << i << std::endl;
         std::vector<float> recoJetEtaVec;
         std::vector<float> recoJetPhiVec;
         std::vector<float> recoJetPtVec;
@@ -193,15 +196,18 @@ int main(int argc, char const *argv[]) {
         std::vector<PseudoJet> pfCands;
         for (int j=0; j < numPfCands; j++) {
             pfCands.push_back( PseudoJet((*pfCandPx)[j], (*pfCandPy)[j], (*pfCandPz)[j], (*pfCandE)[j]));
+            pfCands[j].set_user_index(j);
         }
 
         ClusterSequence pfseq(pfCands, jet_def);
         std::vector<PseudoJet> pfJets = pfseq.inclusive_jets();
 
+        /*
         for (int j=0; j < pfJets.size(); j++) {
             write_out << std::setprecision(10) << 3 << " " << partonEvent << " " << -1 << " " << pfJets[j].pt() <<
                 " " << pfJets[j].rap() << " " << pfJets[j].phi_std() << " " << 0 << " " << 0 << " " << 0 << "\n";
         }
+        */
 
         // constituent parton)
         for (size_t j=0; j < partonJets.size(); j++) {
@@ -265,7 +271,20 @@ int main(int argc, char const *argv[]) {
                     int pfCandMatches = 0;
                     minDR = 10.9;
                     for (int k=0; k < pfJets.size(); k++) {
-                        if (pfJets[k].pt() > 30) {
+                        std::vector<PseudoJet> constituents = sorted_by_pt(pfJets[k].constituents());
+                        int index = constituents[0].user_index(); // get highest Pt particle in Jet
+                        int pdgId = (*pfCandPdgId)[index]; 
+                        if (pfJets[k].pt() > 20 && 
+                                (pdgId == -1
+                                 || pdgId == 1
+                                 || pdgId == 130
+                                 || pdgId == 22
+                                 || pdgId == -211
+                                 || pdgId == 211)) {
+
+                            std::cout << " writing jet with pt: " << pfJets[k].pt() << " and pdgId: " << pdgId << std::endl;
+                            write_out << std::setprecision(10) << 3 << " " << partonEvent << " " << -1 << " " << pfJets[k].pt() <<
+                                " " << pfJets[k].rap() << " " << pfJets[k].phi_std() << " " << 0 << " " << 0 << " " << 0 << "\n";
                             float dR = deltaR(pfJets[k].rap(), pfJets[k].phi_std(), partonEta, partonPhi);
                             if (dR < 0.35) pfCandMatches++;
                             if (dR < minDR) minDR = dR;
