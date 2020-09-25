@@ -157,9 +157,26 @@ int main(int argc, char const *argv[]) {
         tree3->GetEntry(i);
         tree4->GetEntry(i);
         assert(genJetEvent == partonEvent);
+        std::cout << "Got entries" << std::endl;
+
         // save info on genJets
         for (int j=0; j < genJetPt->size(); j++) {
-            write_out << 1 << " " << genJetEvent << " " << 0 << " " << (*genJetPt)[j] << " " << (*genJetEta)[j] << " " << (*genJetPhi)[j] << " " << 0 << " " << 0 << " " << 0 << "\n";
+            write_out 
+                << 1 << " " 
+                << genJetEvent << " " 
+                << 0 << " " 
+                << (*genJetPt)[j] << " " 
+                << (*genJetEta)[j] << " " 
+                << (*genJetPhi)[j] << " " 
+                << 0 << " " 
+                << 0 << " " 
+                << 0 << " "
+                << 0 << " " 
+                << 0 << " "
+                << 0 << " " 
+                << 0 << " " 
+                << 0 << " "
+                << 0 << "\n";
         }
 
         // get eta and phi from reco jets
@@ -173,8 +190,24 @@ int main(int argc, char const *argv[]) {
             recoJetPhiVec.push_back(recoJetPhi);
             recoJetPtVec.push_back(recoJetPt);
             recoJetGenMatchVec.push_back(recoJetGenMatch);
-            write_out << 2 << " " << recoJetEvent << " " << recoJetGenMatch << " " << recoJetPt << " " << recoJetEta << " " << recoJetPhi << " " << 0 << " " << 0 << " " << 0 << "\n";
+            write_out 
+                << 2 << " " 
+                << recoJetEvent << " " 
+                << recoJetGenMatch << " " 
+                << recoJetPt << " " 
+                << recoJetEta << " " 
+                << recoJetPhi << " " 
+                << 0 << " " 
+                << 0 << " " 
+                << 0 << " " 
+                << 0 << " " 
+                << 0 << " " 
+                << 0 << " " 
+                << 0 << " " 
+                << 0 << " " 
+                << 0 << "\n";
         }
+        std::cout << "got reco jets" << std::endl;
 
         // create vector with all parton 4-momenta
         int numPartons = pdgId->size();
@@ -202,20 +235,36 @@ int main(int argc, char const *argv[]) {
         ClusterSequence pfseq(pfCands, jet_def);
         std::vector<PseudoJet> pfJets = pfseq.inclusive_jets();
 
-        /*
-        for (int j=0; j < pfJets.size(); j++) {
-            write_out << std::setprecision(10) << 3 << " " << partonEvent << " " << -1 << " " << pfJets[j].pt() <<
-                " " << pfJets[j].rap() << " " << pfJets[j].phi_std() << " " << 0 << " " << 0 << " " << 0 << "\n";
-        }
-        */
-
         // constituent parton)
         for (size_t j=0; j < partonJets.size(); j++) {
             std::vector<PseudoJet> constituents = sorted_by_pt(partonJets[j].constituents());
-            int index = constituents[0].user_index();
-            write_out << std::setprecision(10) << 0 << " " << partonEvent << " " << -1 << " " << partonJets[j].pt() <<
-                " " << partonJets[j].rap() << " " << partonJets[j].phi_std() <<  " " << (*Vx)[index]
-                << " " <<(*Vy)[index] << " " << (*Vz)[index] << "\n";
+            int index0 = 0;
+            int index1 = 0;
+            int index2 = 0;
+            int index3 = 0;
+            int index4 = 0;
+            if (constituents.size() > 0) index0 = constituents[0].user_index();
+            if (constituents.size() > 1) index1 = constituents[1].user_index();
+            if (constituents.size() > 2) index2 = constituents[2].user_index();
+            if (constituents.size() > 3) index3 = constituents[3].user_index();
+            if (constituents.size() > 4) index4 = constituents[4].user_index();
+            write_out 
+                << std::setprecision(10) 
+                << 0 << " " 
+                << partonEvent << " " 
+                << -1 << " " 
+                << partonJets[j].pt() << " " 
+                << partonJets[j].rap() << " " 
+                << partonJets[j].phi_std() <<  " " 
+                << (*Vx)[index0] << " "
+                <<(*Vy)[index0] << " " 
+                << (*Vz)[index0] << " "
+                << constituents.size() << " " 
+                << (*pdgId)[index0]<< " " 
+                << (*pdgId)[index1]<< " " 
+                << (*pdgId)[index2]<< " " 
+                << (*pdgId)[index3]<< " " 
+                << (*pdgId)[index4]<< "\n";
         }
 
 
@@ -273,18 +322,34 @@ int main(int argc, char const *argv[]) {
                     for (int k=0; k < pfJets.size(); k++) {
                         std::vector<PseudoJet> constituents = sorted_by_pt(pfJets[k].constituents());
                         int index = constituents[0].user_index(); // get highest Pt particle in Jet
-                        int pdgId = (*pfCandPdgId)[index]; 
-                        if (pfJets[k].pt() > 20 && 
-                                (pdgId == -1
-                                 || pdgId == 1
-                                 || pdgId == 130
-                                 || pdgId == 22
-                                 || pdgId == -211
-                                 || pdgId == 211)) {
-
-                            std::cout << " writing jet with pt: " << pfJets[k].pt() << " and pdgId: " << pdgId << std::endl;
-                            write_out << std::setprecision(10) << 3 << " " << partonEvent << " " << -1 << " " << pfJets[k].pt() <<
-                                " " << pfJets[k].rap() << " " << pfJets[k].phi_std() << " " << 0 << " " << 0 << " " << 0 << "\n";
+                        int index0 = 0;
+                        int index1 = 0;
+                        int index2 = 0;
+                        int index3 = 0;
+                        int index4 = 0;
+                        if (constituents.size() > 0) index0 = constituents[0].user_index();
+                        if (constituents.size() > 1) index1 = constituents[1].user_index();
+                        if (constituents.size() > 2) index2 = constituents[2].user_index();
+                        if (constituents.size() > 3) index3 = constituents[3].user_index();
+                        if (constituents.size() > 4) index4 = constituents[4].user_index();
+                        if (pfJets[k].pt() > 20) { 
+                            write_out 
+                                << std::setprecision(10) 
+                                << 3 << " " 
+                                << partonEvent << " " 
+                                << -1 << " " 
+                                << pfJets[k].pt() << " "
+                                << pfJets[k].rap() << " " 
+                                << pfJets[k].phi_std() << " " 
+                                << 0 << " " 
+                                << 0 << " " 
+                                << 0 << " "
+                                << constituents.size() << " " 
+                                << (*pfCandPdgId)[index0] << " " 
+                                << (*pfCandPdgId)[index1] << " " 
+                                << (*pfCandPdgId)[index2] << " " 
+                                << (*pfCandPdgId)[index3] << " " 
+                                << (*pfCandPdgId)[index4] << "\n";
                             float dR = deltaR(pfJets[k].rap(), pfJets[k].phi_std(), partonEta, partonPhi);
                             if (dR < 0.35) pfCandMatches++;
                             if (dR < minDR) minDR = dR;
