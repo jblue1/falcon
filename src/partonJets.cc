@@ -235,6 +235,41 @@ int main(int argc, char const *argv[]) {
         ClusterSequence pfseq(pfCands, jet_def);
         std::vector<PseudoJet> pfJets = pfseq.inclusive_jets();
 
+        for (int j=0; j < pfJets.size(); j++) {
+            std::vector<PseudoJet> constituents = sorted_by_pt(pfJets[j].constituents());
+                        int index0 = 0;
+                        int index1 = 0;
+                        int index2 = 0;
+                        int index3 = 0;
+                        int index4 = 0;
+                        if (constituents.size() > 0) index0 = constituents[0].user_index();
+                        if (constituents.size() > 1) index1 = constituents[1].user_index();
+                        if (constituents.size() > 2) index2 = constituents[2].user_index();
+                        if (constituents.size() > 3) index3 = constituents[3].user_index();
+                        if (constituents.size() > 4) index4 = constituents[4].user_index();
+                        if (pfJets[j].pt() > 20) { 
+                            write_out 
+                                << std::setprecision(10) 
+                                << 3 << " " 
+                                << partonEvent << " " 
+                                << -1 << " " 
+                                << pfJets[j].pt() << " "
+                                << pfJets[j].rap() << " " 
+                                << pfJets[j].phi_std() << " " 
+                                << 0 << " " 
+                                << 0 << " " 
+                                << 0 << " "
+                                << constituents.size() << " " 
+                                << (*pfCandPdgId)[index0] << " " 
+                                << (*pfCandPdgId)[index1] << " " 
+                                << (*pfCandPdgId)[index2] << " " 
+                                << (*pfCandPdgId)[index3] << " " 
+                                << (*pfCandPdgId)[index4] << "\n";
+                        }
+        
+
+        }
+
         // constituent parton)
         for (size_t j=0; j < partonJets.size(); j++) {
             std::vector<PseudoJet> constituents = sorted_by_pt(partonJets[j].constituents());
@@ -320,6 +355,7 @@ int main(int argc, char const *argv[]) {
                     int pfCandMatches = 0;
                     minDR = 10.9;
                     for (int k=0; k < pfJets.size(); k++) {
+                        /*
                         std::vector<PseudoJet> constituents = sorted_by_pt(pfJets[k].constituents());
                         int index = constituents[0].user_index(); // get highest Pt particle in Jet
                         int index0 = 0;
@@ -350,10 +386,11 @@ int main(int argc, char const *argv[]) {
                                 << (*pfCandPdgId)[index2] << " " 
                                 << (*pfCandPdgId)[index3] << " " 
                                 << (*pfCandPdgId)[index4] << "\n";
+                                */
                             float dR = deltaR(pfJets[k].rap(), pfJets[k].phi_std(), partonEta, partonPhi);
                             if (dR < 0.35) pfCandMatches++;
                             if (dR < minDR) minDR = dR;
-                        }
+                      //  }
                     }
                     numMatchesPartonPfCandHist->Fill(pfCandMatches++);
                 }
