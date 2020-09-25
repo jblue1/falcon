@@ -1,10 +1,13 @@
 # data files
 *.root
 *.txt
+models/
 
 # executables
 *.out
+*pycache*
 
 #notebook checkpoints
 *.ipynb_checkpoints
 *checkpoint.ipynb
+
