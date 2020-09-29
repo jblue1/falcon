@@ -60,7 +60,6 @@ int main(int argc, char const *argv[]) {
     TH1* minDRPartonsRecoNoCHSHadHist = new TH1F("minDRPartonsRecoNoCHSHadHist", "Distribution of min dR for each parton jet (matching parton to reco (no CHS, just hadrons)", 100, 0, 1.5);
 
 
-    TH1* numPartonJetsHist = new TH1I("numPartonJetsHist", "Number of parton jets per event (Pt > 20)", 10, 0, 10);
 
 
 
@@ -352,6 +351,7 @@ int main(int argc, char const *argv[]) {
                     minDRPartonsRecoCHSHist->Fill(minDR);
                     if (recoCHSMatches == 0) {
                         partonPtNoRecoCHSMatchHist->Fill(partonJets[j].pt());
+                        numLowPtPartonNoRecoCHSMatchHist->Fill(0);
                         partonJetPhiNoRecoMatchHist->Fill(partonPhi);
                         partonJetEtaNoRecoMatchHist->Fill(partonEta);
                         // check the pdgIds of partons in jet with no matches
@@ -378,7 +378,10 @@ int main(int argc, char const *argv[]) {
                     }
                     numMatchesPartonGenHist->Fill(genMatches);
                     minDRPartonsGenHist->Fill(minDR);
-                    if (genMatches == 0) partonPtNoGenMatchHist->Fill(partonJets[j].pt());
+                    if (genMatches == 0) {
+                        partonPtNoGenMatchHist->Fill(partonJets[j].pt());
+                        numLowPtPartonNoGenMatchHist->Fill(0);
+                    }
 
                     int recoNoCHSAllMatches = 0;
                     minDR = 10.0;
@@ -389,6 +392,9 @@ int main(int argc, char const *argv[]) {
                     }
                     numMatchesPartonRecoNoCHSAllHist->Fill(recoNoCHSAllMatches++);
                     minDRPartonsRecoNoCHSAllHist->Fill(minDR);
+                    if (recoNoCHSAllMatches == 0) {
+                        numLowPtPartonNoRecoNoCHSAllMatchHist->Fill(0);
+                    }
 
                     int recoNoCHSHadMatches = 0;
                     minDR = 10.0;
@@ -399,10 +405,12 @@ int main(int argc, char const *argv[]) {
                     }
                     numMatchesPartonRecoNoCHSHadHist->Fill(recoNoCHSHadMatches);
                     minDRPartonsRecoNoCHSHadHist->Fill(minDR);
+                    if (recoNoCHSHadMatches == 0) {
+                        numLowPtPartonNoRecoNoCHSHadMatchHist->Fill(0);
+                    }
                 }
             }
         }
-        numPartonJetsHist->Fill(numPartonJets);
     }
 
     numMatchesPartonRecoCHSHist->Write();
@@ -415,7 +423,6 @@ int main(int argc, char const *argv[]) {
     minDRPartonsRecoNoCHSAllHist->Write();
     minDRPartonsRecoNoCHSHadHist->Write();
 
-    numPartonJetsHist->Write();
 
     partonPtNoGenMatchHist->Write();
     partonPtNoRecoCHSMatchHist->Write();
@@ -445,7 +452,6 @@ int main(int argc, char const *argv[]) {
     delete minDRPartonsRecoNoCHSAllHist;
     delete minDRPartonsRecoNoCHSHadHist;
 
-    delete numPartonJetsHist;
 
     delete partonPtNoGenMatchHist;
     delete partonPtNoRecoCHSMatchHist;
