@@ -59,13 +59,21 @@ int main(int argc, char const *argv[]) {
     TH1* minDRPartonsRecoNoCHSAllHist = new TH1F("minDRPartonsRecoNoCHSAllHist", "Distribution of min dR for each parton jet (matching parton to reco (no CHS, all particles)", 100, 0, 1.5);
     TH1* minDRPartonsRecoNoCHSHadHist = new TH1F("minDRPartonsRecoNoCHSHadHist", "Distribution of min dR for each parton jet (matching parton to reco (no CHS, just hadrons)", 100, 0, 1.5);
 
+
     TH1* numPartonJetsHist = new TH1I("numPartonJetsHist", "Number of parton jets per event (Pt > 20)", 10, 0, 10);
 
 
 
     TH1* partonPtNoGenMatchHist = new TH1F("partonPtNoGenMatchHist", "Distribution of Pt for parton jets with no genJet match", 100, 0, 200);
-    TH1* partonPtNoRecoCHSMatchHist = new TH1F("partonPtNoRecoCHSMatchHist", "Distribution of Pt for parton jets with no recoJet match", 200, 0, 400);
-    //TH1* partonPtNoRecoCHSMatchHist = new TH1F("partonPtNoRecoCHSMatchHist", "Distribution of Pt for parton jets with no recoJet match", 200, 0, 400);
+    TH1* partonPtNoRecoCHSMatchHist = new TH1F("partonPtNoRecoCHSMatchHist", "Distribution of Pt for parton jets with no reco jet (CHS) match", 200, 0, 400);
+    TH1* partonPtNoRecoNoCHSAllMatchHist = new TH1F("partonPtNoRecoCHSAllMatchHist", "Distribution of Pt for parton jets with no reco jet (no CHS, all particles) match", 200, 0, 400);
+    TH1* partonPtNoRecoNoCHSHadMatchHist = new TH1F("partonPtNoRecoCHSHadMatchHist", "Distribution of Pt for parton jets with no reco jet (no CHS, just hadrons) match", 200, 0, 400);
+
+    TH1* numLowPtPartonNoGenMatchHist = new TH1I("numLowPtPartonNoGenMatchHist", "Number of partons with Pt<30Gev with no Gen match", 1, 0, 1);
+    TH1* numLowPtPartonNoRecoCHSMatchHist = new TH1I("numLowPtPartonNoRecoCHSMatchHist", "Number of partons with Pt<30GeV with no reco match (CHS)", 1, 0, 1);
+    TH1* numLowPtPartonNoRecoNoCHSAllMatchHist = new TH1I("numLowPtPartonNoRecoNoCHSAllMatchHist", "Number of partons with Pt<30GeV with no reco match (no CHS, all particles)", 1, 0, 1);
+    TH1* numLowPtPartonNoRecoNoCHSHadMatchHist = new TH1I("numLowPtPartonNoRecoNoCHSHadMatchHist", "Number of partons with Pt<30GeV with no reco match (no CHS, just hadrons)", 1, 0, 1);
+
 
     TH1* partonJetPhiHist = new TH1F("partonJetPhiHist", "Distribution of Phi for parton jets", 100, -3.5, 3.5);
     TH1* partonJetEtaHist = new TH1F("partonJetEtaHist", "Distribution of Eta for parton jets", 100, -5, 5);
@@ -405,11 +413,19 @@ int main(int argc, char const *argv[]) {
     minDRPartonsRecoCHSHist->Write();
     minDRPartonsGenHist->Write();
     minDRPartonsRecoNoCHSAllHist->Write();
+    minDRPartonsRecoNoCHSHadHist->Write();
 
     numPartonJetsHist->Write();
 
     partonPtNoGenMatchHist->Write();
     partonPtNoRecoCHSMatchHist->Write();
+    partonPtNoRecoNoCHSAllMatchHist->Write();
+    partonPtNoRecoNoCHSHadMatchHist->Write();
+
+    numLowPtPartonNoGenMatchHist->Write();
+    numLowPtPartonNoRecoCHSMatchHist->Write();
+    numLowPtPartonNoRecoNoCHSAllMatchHist->Write();
+    numLowPtPartonNoRecoNoCHSHadMatchHist->Write();
 
     partonJetPhiHist->Write();
     partonJetEtaHist->Write();
@@ -433,6 +449,13 @@ int main(int argc, char const *argv[]) {
 
     delete partonPtNoGenMatchHist;
     delete partonPtNoRecoCHSMatchHist;
+    delete partonPtNoRecoNoCHSAllMatchHist;
+    delete partonPtNoRecoNoCHSHadMatchHist;
+
+    delete numLowPtPartonNoGenMatchHist;
+    delete numLowPtPartonNoRecoCHSMatchHist;
+    delete numLowPtPartonNoRecoNoCHSAllMatchHist;
+    delete numLowPtPartonNoRecoNoCHSHadMatchHist;
 
     delete partonJetPhiHist;
     delete partonJetEtaHist;
