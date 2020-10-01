@@ -93,16 +93,16 @@ int main(int arc, char const *argv[]) {
                         }
                     }
                     if (minDR < 0.35) {
-                        write_out << partonJets[j].px() << " " << partonJets[j].py() << " " << partonJets[j].pz()
-                            << " " <<  partonJets[j].e() << " " << (*genJetPx)[jetIndex] << " "
-                            << (*genJetPy)[jetIndex] << " " << (*genJetPz)[jetIndex] << " "
+                        write_out << partonJets[j].pt() << " " << partonJets[j].rap() << " " << partonJets[j].phi()
+                            << " " <<  partonJets[j].e() << " " << (*genJetPt)[jetIndex] << " "
+                            << (*genJetEta)[jetIndex] << " " << (*genJetPhi)[jetIndex] << " "
                             << (*genJetE)[jetIndex] << std::endl;
                         std::cout << "Parton Pt: " << partonJets[j].pt() << std::endl;
                         std::cout << "Gen Pt: " << (*genJetPt)[jetIndex] << std::endl;
-                        std::cout << "Parton Px: " << partonJets[j].px() << std::endl;
-                        std::cout << "Gen Px: " << (*genJetPx)[jetIndex] << std::endl;
-                        std::cout << "Parton Py: " << partonJets[j].py() << std::endl;
-                        std::cout << "Gen Py: " << (*genJetPy)[jetIndex] << std::endl;
+                        std::cout << "Parton Eta: " << partonJets[j].rap() << std::endl;
+                        std::cout << "Gen Eta: " << (*genJetEta)[jetIndex] << std::endl;
+                        std::cout << "Parton Phi: " << partonJets[j].phi() << std::endl;
+                        std::cout << "Gen Phi: " << (*genJetPhi)[jetIndex] << std::endl;
                         }
                     }
                 }
