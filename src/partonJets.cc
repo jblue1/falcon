@@ -93,6 +93,9 @@ int main(int argc, char const *argv[]) {
 
     TH1* numMatchesRecoCHSGenHist = new TH1I("numMatchesRecoCHSGenHist", "Number of reco jets (CHS) with a gen jet match", 10, 0, 10);
 
+    TH1* partonPtHist = new TH1F("partonPtHist", "Parton Pt", 200, 0, 200);
+    TH1* pfCandPtHist = new TH1F("pfCandPtHist", "Pf Cand Pt", 200, 0, 200);
+
 
     // file to write data as txt
     std::ofstream write_out("./data/txt/" + txtFile);
@@ -105,6 +108,7 @@ int main(int argc, char const *argv[]) {
     std::vector<Float_t>* pfCandE = 0;
     std::vector<Int_t>* pfCandPdgId = 0;
     std::vector<Float_t>* pfCandVx = 0;
+    std::vector<Float_t>* pfCandPt = 0;
 
     // genPartTree variables
     std::vector<Int_t>* pdgId = 0;
@@ -160,6 +164,8 @@ int main(int argc, char const *argv[]) {
     tree4->SetBranchAddress("pfCandE", &pfCandE);
     tree4->SetBranchAddress("pfCandPdgId", &pfCandPdgId);
     tree4->SetBranchAddress("pfCandVx", &pfCandVx);
+    tree4->SetBranchAddress("pfCandPt", &pfCandPt);
+
 
 
 
@@ -249,6 +255,7 @@ int main(int argc, char const *argv[]) {
         int numPartons = pdgId->size();
         std::vector<PseudoJet> particles;
         for (int j=0; j < numPartons; j++) {
+            partonPtHist->Fill((*Pt)[j]);
             particles.push_back( PseudoJet( (*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]) );
             particles[j].set_user_index(j); // set index to be able to identify constituent particles later
         }
@@ -265,6 +272,7 @@ int main(int argc, char const *argv[]) {
         std::vector<PseudoJet> pfCandsAll;
         std::vector<PseudoJet> pfCandsHad;
         for (int j=0; j < numPfCands; j++) {
+            pfCandPtHist->Fill((*pfCandPt)[j]);
             pfCandsAll.push_back( PseudoJet((*pfCandPx)[j], (*pfCandPy)[j], (*pfCandPz)[j], (*pfCandE)[j]));
             pfCandsAll[j].set_user_index(j);
             int pdgId = (*pfCandPdgId)[j];
@@ -612,6 +620,9 @@ int main(int argc, char const *argv[]) {
 
     numMatchesRecoCHSGenHist->Write();
 
+    partonPtHist->Write();
+    pfCandPtHist->Write();
+
     delete numMatchesPartonRecoCHS_20_30_Hist;
     delete numMatchesPartonGen_20_30_Hist;
     delete numMatchesPartonGen_20_15_Hist;
@@ -655,6 +666,9 @@ int main(int argc, char const *argv[]) {
     delete recoNoCHSAllNoPartonMatchPtHist;
     
     delete numMatchesRecoCHSGenHist;
+
+    delete partonPtHist;
+    delete pfCandPtHist;
 
     write_out.close();
 
