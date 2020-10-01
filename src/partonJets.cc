@@ -88,8 +88,8 @@ int main(int argc, char const *argv[]) {
     TH1* partonNoRecoMatchPdgIdHist = new TH1I("partonNoRecoMatchPDgIdHist", "PGDIDs of partons in parton jets with no reco match", 33, -6, 27);
     TH1* recoNoCHSAllNoPartonMatchPdgIdHist = new TH1I("recoNoCHSAllNoPartonmatchPdgIdHist", "PGDIDs of pf candidates in reco jets with no parton match", 424, -212, 212);
 
-    TH1* recoNoCHSAllPtHist = new TH1F("recoNoCHSAllPtHist", "Pt Distribution of reco jets (no CHS, all particles)", 2000, 0, 1000);
-    TH1* recoNoCHSAllNoPartonMatchPtHist = new TH1F("recoNoCHSAllNoPartonMatchPtHist", "Pt Distribution of reco jets (no CHS, all particles) with no parton jet match", 2000, 0, 1000);
+    TH1* recoNoCHSAllPtHist = new TH1F("recoNoCHSAllPtHist", "Pt Distribution of reco jets (no CHS, all particles)", 1000, 0, 1000);
+    TH1* recoNoCHSAllNoPartonMatchPtHist = new TH1F("recoNoCHSAllNoPartonMatchPtHist", "Pt Distribution of reco jets (no CHS, all particles) with no parton jet match", 1000, 0, 1000);
 
     TH1* numMatchesRecoCHSGenHist = new TH1I("numMatchesRecoCHSGenHist", "Number of reco jets (CHS) with a gen jet match", 10, 0, 10);
 
