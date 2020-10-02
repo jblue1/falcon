@@ -28,18 +28,25 @@ def main():
             net.summary()
 
     data = np.loadtxt('../data/txt/matchData.txt', skiprows=2)
-    partonMean = np.mean(data[:, :3], axis=0)
-    partonStd = np.std(data[:, :3], axis=0)
+    partonPtMax = np.max(data[:, 0], axis=0)
+    partonPtMin = np.min(data[:, 0], axis=0)
+    partonMean = np.mean(data[:, 1:3], axis=0)
+    partonStd = np.std(data[:, 1:3], axis=0)
     partonEMax = np.max(data[:, 3], axis=0)
     partonEMin = np.min(data[:, 3], axis=0)
-    genMean = np.mean(data[:, 4:7], axis=0)
-    genStd = np.std(data[:, 4:7], axis=0)
+    
+    genPtMax = np.max(data[:, 4], axis=0)
+    genPtMin = np.min(data[:, 4], axis=0)
+    genMean = np.mean(data[:, 5:7], axis=0)
+    genStd = np.std(data[:, 5:7], axis=0)
     genEMax = np.max(data[:, 7], axis=0)
     genEMin = np.min(data[:, 7], axis=0)
 
-    data[:, :3] = (data[:, :3] - partonMean)/partonStd
+    data[:, 0] = (data[:, 0] - partonPtMin)/partonPtMax
+    data[:, 1:3] = (data[:, 1:3] - partonMean)/partonStd
     data[:, 3] = (data[:, 3] - partonEMin)/partonEMax
-    data[:, 4:7] = (data[:, 4:7] - genMean)/genStd
+    data[:, 4] = (data[:, 4] - genPtMin)/genPtMax
+    data[:, 5:7] = (data[:, 5:7] - genMean)/genStd
     data[:, 7] = (data[:, 7] - genEMin)/genEMax
     '''
     mean = np.mean(data, axis=0)
@@ -69,7 +76,7 @@ def main():
     history = net.fit(trainParton,
             trainGen,
             batch_size=64,
-            epochs=50,
+            epochs=1000,
             validation_data=(validateParton, validateGen),
             callbacks=[cp_callback])
 
