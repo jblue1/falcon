@@ -93,7 +93,7 @@ int main(int arc, char const *argv[]) {
                         }
                     }
                     if (minDR < 0.35) {
-                        write_out << partonJets[j].pt() << " " << partonJets[j].rap() << " " << partonJets[j].phi()
+                        write_out << partonJets[j].pt() << " " << partonJets[j].rap() << " " << partonJets[j].phi_std()
                             << " " <<  partonJets[j].e() << " " << (*genJetPt)[jetIndex] << " "
                             << (*genJetEta)[jetIndex] << " " << (*genJetPhi)[jetIndex] << " "
                             << (*genJetE)[jetIndex] << std::endl;
