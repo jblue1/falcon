@@ -7,6 +7,7 @@
 #include <cassert>
 #include <string>
 #include <iomanip>
+#include <set>
 #include "helpers.h"
 
 using namespace fastjet;
@@ -96,6 +97,12 @@ int main(int argc, char const *argv[]) {
     TH1* partonPtHist = new TH1F("partonPtHist", "Parton Pt", 200, 0, 200);
     TH1* pfCandPtHist = new TH1F("pfCandPtHist", "Pf Cand Pt", 200, 0, 200);
 
+    TH1* numPartonVerticesHist = new TH1I("numPartonVerticesHist", "Number of parton vertices in each event", 50, 0, 50);
+    TH1* numPfCandVerticesHist = new TH1I("numPfCandVerticesHist", "Number of PF cand vertices in each event", 1500, 0, 1500);
+    TH1* numRecoNoCHSAllVerticesHist = new TH1I("numRecoNoCHSAllVerticesHist", "Number of vertices of reco jets (no CHS, all particles) in each event", 50, 0, 50);
+
+    TH1* numRecoVerticesHist = new TH1I("numRecoVerticesHist", "Number of good primary vertices from the reco (CHS) clustering", 50, 0, 50);
+
 
     // file to write data as txt
     std::ofstream write_out("./data/txt/" + txtFile);
@@ -108,18 +115,20 @@ int main(int argc, char const *argv[]) {
     std::vector<Float_t>* pfCandE = 0;
     std::vector<Int_t>* pfCandPdgId = 0;
     std::vector<Float_t>* pfCandVx = 0;
+    std::vector<Float_t>* pfCandVy = 0;
+    std::vector<Float_t>* pfCandVz = 0;
     std::vector<Float_t>* pfCandPt = 0;
 
     // genPartTree variables
-    std::vector<Int_t>* pdgId = 0;
+    std::vector<Int_t>* partonPdgId = 0;
     std::vector<Float_t>* partonPx = 0;
     std::vector<Float_t>* partonPy = 0;
     std::vector<Float_t>* partonPz = 0;
     std::vector<Float_t>* partonE = 0;
-    std::vector<Float_t>* Pt = 0;
-    std::vector<Float_t>* Vx = 0;
-    std::vector<Float_t>* Vy = 0;
-    std::vector<Float_t>* Vz = 0;
+    std::vector<Float_t>* partonPt = 0;
+    std::vector<Float_t>* partonVx = 0;
+    std::vector<Float_t>* partonVy = 0;
+    std::vector<Float_t>* partonVz = 0;
     ULong64_t partonEvent = 0;
 
     // jetTree variables
@@ -128,6 +137,7 @@ int main(int argc, char const *argv[]) {
     Float_t recoJetPhi = 0;
     Float_t recoJetPt = 0;
     Int_t recoJetGenMatch = 0;
+    UInt_t numRecoVertices = 0;
 
     // genJetTree variables
     std::vector<Float_t>* genJetPt = 0;
@@ -135,22 +145,23 @@ int main(int argc, char const *argv[]) {
     std::vector<Float_t>* genJetPhi = 0;
     ULong64_t genJetEvent = 0;
 
-    tree1->SetBranchAddress("genPartPdgId", &pdgId);
+    tree1->SetBranchAddress("genPartPdgId", &partonPdgId);
     tree1->SetBranchAddress("genPartPx", &partonPx);
     tree1->SetBranchAddress("genPartPy", &partonPy);
     tree1->SetBranchAddress("genPartPz", &partonPz);
     tree1->SetBranchAddress("genPartE", &partonE);
     tree1->SetBranchAddress("event", &partonEvent);
-    tree1->SetBranchAddress("genPartPt", &Pt);
-    tree1->SetBranchAddress("genPartVx", &Vx);
-    tree1->SetBranchAddress("genPartVy", &Vy);
-    tree1->SetBranchAddress("genPartVz", &Vz);
+    tree1->SetBranchAddress("genPartPt", &partonPt);
+    tree1->SetBranchAddress("genPartVx", &partonVx);
+    tree1->SetBranchAddress("genPartVy", &partonVy);
+    tree1->SetBranchAddress("genPartVz", &partonVz);
 
     tree2->SetBranchAddress("event", &recoJetEvent);
     tree2->SetBranchAddress("jetEta", &recoJetEta);
     tree2->SetBranchAddress("jetPhi", &recoJetPhi);
     tree2->SetBranchAddress("jetPt", &recoJetPt);
     tree2->SetBranchAddress("jetGenMatch", &recoJetGenMatch);
+    tree2->SetBranchAddress("PV_npvsGood", &numRecoVertices);
 
 
     tree3->SetBranchAddress("genJetPt", &genJetPt);
@@ -164,10 +175,9 @@ int main(int argc, char const *argv[]) {
     tree4->SetBranchAddress("pfCandE", &pfCandE);
     tree4->SetBranchAddress("pfCandPdgId", &pfCandPdgId);
     tree4->SetBranchAddress("pfCandVx", &pfCandVx);
+    tree4->SetBranchAddress("pfCandVy", &pfCandVy);
+    tree4->SetBranchAddress("pfCandVz", &pfCandVz);
     tree4->SetBranchAddress("pfCandPt", &pfCandPt);
-
-
-
 
     int numEvents = tree1->GetEntries();
 
@@ -182,15 +192,16 @@ int main(int argc, char const *argv[]) {
     // loop through events
     for (int i=0; i < numEvents; i++) {
         if (i % 500 == 0) std::cout << "Event: " << i << std::endl;
-       // std::cout << "Event: " << i << std::endl;
+        //std::cout << "Event: " << i << std::endl;
         //std::cout << "=======================================" << std::endl;
         std::vector<float> recoJetEtaVec;
         std::vector<float> recoJetPhiVec;
         std::vector<float> recoJetPtVec;
         std::vector<int> recoJetGenMatchVec;
-        std::vector<float> partonVx;
-        std::vector<float> partonVy;
-        std::vector<float> partonVz;
+
+        std::set<std::vector<float>> partonVertices;
+        std::set<std::vector<float>> pfCandVertices;
+        std::set<std::vector<float>> recoNoCHSAllVertices;
 
         tree1->GetEntry(i);
         tree3->GetEntry(i);
@@ -225,6 +236,7 @@ int main(int argc, char const *argv[]) {
             jetIndex++;
             tree2->GetEntry(jetIndex);
             if (recoJetEvent != partonEvent || jetIndex > numRecoJetsTot) break; //TODO: This seems a little hacky, figure out better logic
+
             if (recoJetPt >= 30.0) {
                 numRecoJets++;
                 recoJetEtaVec.push_back(recoJetEta);
@@ -252,12 +264,23 @@ int main(int argc, char const *argv[]) {
         }
 
         // create vector with all parton 4-momenta
-        int numPartons = pdgId->size();
+        int numPartons = partonPdgId->size();
         std::vector<PseudoJet> particles;
+        //std::cout << "Individual partons" << std::endl;
         for (int j=0; j < numPartons; j++) {
-            partonPtHist->Fill((*Pt)[j]);
+            partonPtHist->Fill((*partonPt)[j]);
             particles.push_back( PseudoJet( (*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]) );
             particles[j].set_user_index(j); // set index to be able to identify constituent particles later
+            std::vector<float> vertex;
+            vertex.push_back((*partonVx)[j]);
+            vertex.push_back((*partonVy)[j]);
+            vertex.push_back((*partonVz)[j]);
+            partonVertices.insert(vertex);
+            //std::cout << "  PDGID: " << (*partonPdgId)[j] << std::endl;
+            //std::cout << "  Pt: " << (*partonPt)[j] << std::endl;
+            //std::cout << "  Vx: " << (*partonVx)[j] << std::endl;
+            //std::cout << "  Vy: " << (*partonVy)[j] << std::endl;
+            //std::cout << "  Vz: " << (*partonVz)[j] << std::endl << std::endl;
         }
 
         // cluster partons into jet with anti-kt algorithm
@@ -272,6 +295,12 @@ int main(int argc, char const *argv[]) {
         std::vector<PseudoJet> pfCandsAll;
         std::vector<PseudoJet> pfCandsHad;
         for (int j=0; j < numPfCands; j++) {
+            std::vector<float> vertex;
+            vertex.push_back((*pfCandVx)[j]);
+            vertex.push_back((*pfCandVy)[j]);
+            vertex.push_back((*pfCandVz)[j]);
+            pfCandVertices.insert(vertex);
+
             pfCandPtHist->Fill((*pfCandPt)[j]);
             pfCandsAll.push_back( PseudoJet((*pfCandPx)[j], (*pfCandPy)[j], (*pfCandPz)[j], (*pfCandE)[j]));
             pfCandsAll[j].set_user_index(j);
@@ -281,8 +310,10 @@ int main(int argc, char const *argv[]) {
                 // TODO: figure out why this line causes a seg fault
                 // pfCandsHad[j].set_user_index(j);
             }
-
         }
+        int nV = pfCandVertices.size();
+        std::cout << nV << std::endl;
+        numPfCandVerticesHist->Fill(nV);
         assert(pfCandsHad.size() <= pfCandsAll.size());
 
         ClusterSequence pfSeqAll(pfCandsAll, jet_def);
@@ -290,6 +321,7 @@ int main(int argc, char const *argv[]) {
 
         ClusterSequence pfSeqHad(pfCandsHad, jet_def);
         std::vector<PseudoJet> pfJetsHad = pfSeqHad.inclusive_jets();
+        //std::cout << "PF Candidates:" << std::endl;
 
         for (size_t j=0; j < pfJetsAll.size(); j++) {
             std::vector<PseudoJet> constituents = sorted_by_pt(pfJetsAll[j].constituents());
@@ -304,6 +336,19 @@ int main(int argc, char const *argv[]) {
             if (constituents.size() > 3) index3 = constituents[3].user_index();
             if (constituents.size() > 4) index4 = constituents[4].user_index();
             if (pfJetsAll[j].pt() >= 20.0) {
+                std::vector<float> vertex;
+                vertex.push_back((*pfCandVx)[index0]);
+                vertex.push_back((*pfCandVy)[index0]);
+                vertex.push_back((*pfCandVz)[index0]);
+                recoNoCHSAllVertices.insert(vertex);
+
+
+                                //std::cout << "  Jet Pt: " << pfJetsAll[j].pt() << std::endl;
+                //std::cout << std::setprecision(12) << "  PF cand Vx: " << (*pfCandVx)[index0] << std::endl;
+                //std::cout << std::setprecision(12) << "  PF cand Vy: " << (*pfCandVy)[index0] << std::endl;
+                //std::cout << std::setprecision(12) << "  PF cand Vz: " << (*pfCandVz)[index0] << std::endl;
+                //std::cout << std::endl;
+
                 write_out
                     << std::setprecision(10)
                     << 3 << " "
@@ -323,9 +368,13 @@ int main(int argc, char const *argv[]) {
                     << (*pfCandPdgId)[index4] << "\n";
             }
         }
+        numRecoNoCHSAllVerticesHist->Fill(recoNoCHSAllVertices.size());
+
 
         int numPartonJets = 0;
         // constituent parton)
+
+        //std::cout << "Partons" << std::endl;
         for (size_t j=0; j < partonJets.size(); j++) {
             std::vector<PseudoJet> constituents = sorted_by_pt(partonJets[j].constituents());
             int index0 = 0;
@@ -340,6 +389,12 @@ int main(int argc, char const *argv[]) {
             if (constituents.size() > 4) index4 = constituents[4].user_index();
             if (partonJets[j].pt() >= 20.0) {
                 numPartonJets++;
+                
+                //std::cout << "  Jet Pt: " << partonJets[j].pt() << std::endl;
+                //std::cout << std::setprecision(12) <<  "  Parton Vx: " << (*partonVx)[index0] << std::endl;
+                //std::cout << std::setprecision(12) <<  "  Parton Vy: " << (*partonVy)[index0] << std::endl;
+                //std::cout << std::setprecision(12) <<  "  Parton Vz: " << (*partonVz)[index0] << std::endl;
+               // std::cout << std::endl;
             write_out
                 << std::setprecision(10) 
                 << 0 << " " 
@@ -348,17 +403,18 @@ int main(int argc, char const *argv[]) {
                 << partonJets[j].pt() << " " 
                 << partonJets[j].rap() << " " 
                 << partonJets[j].phi_std() <<  " " 
-                << (*Vx)[index0] << " "
-                <<(*Vy)[index0] << " " 
-                << (*Vz)[index0] << " "
+                << (*partonVx)[index0] << " "
+                <<(*partonVy)[index0] << " " 
+                << (*partonVz)[index0] << " "
                 << constituents.size() << " " 
-                << (*pdgId)[index0]<< " " 
-                << (*pdgId)[index1]<< " " 
-                << (*pdgId)[index2]<< " " 
-                << (*pdgId)[index3]<< " " 
-                << (*pdgId)[index4]<< "\n";
+                << (*partonPdgId)[index0]<< " " 
+                << (*partonPdgId)[index1]<< " " 
+                << (*partonPdgId)[index2]<< " " 
+                << (*partonPdgId)[index3]<< " " 
+                << (*partonPdgId)[index4]<< "\n";
             }
         }
+        numPartonVerticesHist->Fill(partonVertices.size());
 
 
         // go through each parton jet and find how many reco and gen Jet
@@ -413,11 +469,11 @@ int main(int argc, char const *argv[]) {
                         std::vector<PseudoJet> constituents = sorted_by_pt(partonJets[j].constituents()); // get consituent partons in the jet
                         for (size_t k=0; k<constituents.size(); k++) {
                             int index = constituents[k].user_index(); // get index of parton in jet with highest pt
-                            int partonPdgId = (*pdgId)[index];
-                            if (partonPdgId > 21 || partonPdgId < -6) {
+                            int pdgId = (*partonPdgId)[index];
+                            if (pdgId > 21 || pdgId < -6) {
                             }
-                            if (k == 0) highestPtPartonJetNoRecoMatchHist->Fill(partonPdgId);
-                            partonNoRecoMatchPdgIdHist->Fill(partonPdgId);
+                            if (k == 0) highestPtPartonJetNoRecoMatchHist->Fill(pdgId);
+                            partonNoRecoMatchPdgIdHist->Fill(pdgId);
                         }
                     }
 
@@ -623,6 +679,11 @@ int main(int argc, char const *argv[]) {
     partonPtHist->Write();
     pfCandPtHist->Write();
 
+    numPartonVerticesHist->Write();
+    numPfCandVerticesHist->Write();
+    numRecoNoCHSAllVerticesHist->Write();
+    numRecoVerticesHist->Write();
+
     delete numMatchesPartonRecoCHS_20_30_Hist;
     delete numMatchesPartonGen_20_30_Hist;
     delete numMatchesPartonGen_20_15_Hist;
@@ -669,6 +730,11 @@ int main(int argc, char const *argv[]) {
 
     delete partonPtHist;
     delete pfCandPtHist;
+
+    delete numPartonVerticesHist;
+    delete numPfCandVerticesHist;
+    delete numRecoNoCHSAllVerticesHist;
+    delete numRecoVerticesHist;
 
     write_out.close();
 
