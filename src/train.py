@@ -35,19 +35,19 @@ def main():
     partonEMax = np.max(data[:, 3], axis=0)
     partonEMin = np.min(data[:, 3], axis=0)
     
-    genPtMax = np.max(data[:, 4], axis=0)
-    genPtMin = np.min(data[:, 4], axis=0)
-    genMean = np.mean(data[:, 5:7], axis=0)
-    genStd = np.std(data[:, 5:7], axis=0)
-    genEMax = np.max(data[:, 7], axis=0)
-    genEMin = np.min(data[:, 7], axis=0)
+    genPtMax = np.max(data[:, 17], axis=0)
+    genPtMin = np.min(data[:, 17], axis=0)
+    genMean = np.mean(data[:, 18:20], axis=0)
+    genStd = np.std(data[:, 18:20], axis=0)
+    genEMax = np.max(data[:, 20], axis=0)
+    genEMin = np.min(data[:, 20], axis=0)
 
     data[:, 0] = (data[:, 0] - partonPtMin)/partonPtMax
     data[:, 1:3] = (data[:, 1:3] - partonMean)/partonStd
     data[:, 3] = (data[:, 3] - partonEMin)/partonEMax
-    data[:, 4] = (data[:, 4] - genPtMin)/genPtMax
-    data[:, 5:7] = (data[:, 5:7] - genMean)/genStd
-    data[:, 7] = (data[:, 7] - genEMin)/genEMax
+    data[:, 17] = (data[:, 17] - genPtMin)/genPtMax
+    data[:, 18:20] = (data[:, 18:20] - genMean)/genStd
+    data[:, 20] = (data[:, 20] - genEMin)/genEMax
     '''
     mean = np.mean(data, axis=0)
     std = np.std(data, axis=0)
@@ -55,11 +55,11 @@ def main():
     '''
     index = int(0.8*len(data))
     train = data[:index, :]
-    trainParton = train[:, :4]
-    trainGen = train[:, 4:]
+    trainParton = train[:, :17]
+    trainGen = train[:, 17:]
     validate = data[index:, :]
-    validateParton = validate[:, :4]
-    validateGen = validate[:, 4:]
+    validateParton = validate[:, :17]
+    validateGen = validate[:, 17:]
     
     checkpoint_path = os.path.join(save_dir, 'training/cp.cpkt')
     checkpoint_dir = os.path.dirname(checkpoint_path)
@@ -70,7 +70,7 @@ def main():
             save_best_only=True)
 
     net.compile(optimizer=keras.optimizers.Adam(learning_rate=1e-4),
-           loss=keras.losses.MeanAbsoluteError(),
+           loss=keras.losses.MeanSquaredError(),
            metrics=[keras.metrics.MeanAbsoluteError()])
 
     history = net.fit(trainParton,
