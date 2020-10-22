@@ -69,14 +69,14 @@ def main():
             verbose=1,
             save_best_only=True)
 
-    net.compile(optimizer=keras.optimizers.Adam(learning_rate=1e-4),
-           loss=keras.losses.MeanSquaredError(),
+    net.compile(optimizer=keras.optimizers.Adam(learning_rate=2e-4),
+           loss=keras.losses.MeanAbsoluteError(),
            metrics=[keras.metrics.MeanAbsoluteError()])
 
     history = net.fit(trainParton,
             trainGen,
             batch_size=64,
-            epochs=1000,
+            epochs=500,
             validation_data=(validateParton, validateGen),
             callbacks=[cp_callback])
 
