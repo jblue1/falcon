@@ -42,7 +42,7 @@ int main(int argc, char const *argv[]) {
 
     TFile f(dataPath.c_str());
     TDirectoryFile* df = (TDirectoryFile*) f.Get("AK4jets");
-    TTree* tree2 = (TTree*) df->Get("jetTree;3");
+    TTree* tree2 = (TTree*) df->Get("jetTree");
     TTree* tree1 = (TTree*) df->Get("genPartTree");
     TTree* tree3 = (TTree*) df->Get("genJetTree");
     TTree* tree4 = (TTree*) df->Get("pfCandTree");
@@ -137,7 +137,7 @@ int main(int argc, char const *argv[]) {
     Float_t recoJetPhi = 0;
     Float_t recoJetPt = 0;
     Int_t recoJetGenMatch = 0;
-    UInt_t numRecoVertices = 0;
+    Int_t numRecoVertices = 0;
 
     // genJetTree variables
     std::vector<Float_t>* genJetPt = 0;
@@ -162,7 +162,6 @@ int main(int argc, char const *argv[]) {
     tree2->SetBranchAddress("jetPt", &recoJetPt);
     tree2->SetBranchAddress("jetGenMatch", &recoJetGenMatch);
     tree2->SetBranchAddress("PV_npvsGood", &numRecoVertices);
-
 
     tree3->SetBranchAddress("genJetPt", &genJetPt);
     tree3->SetBranchAddress("genJetEta", &genJetEta);
@@ -191,8 +190,8 @@ int main(int argc, char const *argv[]) {
 
     // loop through events
     for (int i=0; i < numEvents; i++) {
-        if (i % 500 == 0) std::cout << "Event: " << i << std::endl;
-        //std::cout << "Event: " << i << std::endl;
+        //if (i % 500 == 0) std::cout << "Event: " << i << std::endl;
+        std::cout << "Event: " << i << std::endl;
         //std::cout << "=======================================" << std::endl;
         std::vector<float> recoJetEtaVec;
         std::vector<float> recoJetPhiVec;
@@ -232,10 +231,13 @@ int main(int argc, char const *argv[]) {
 
         // get eta and phi from reco jets
         int numRecoJets = 0;
+        int count = 0;
         while (true) {
             jetIndex++;
             tree2->GetEntry(jetIndex);
             if (recoJetEvent != partonEvent || jetIndex > numRecoJetsTot) break; //TODO: This seems a little hacky, figure out better logic
+            if (count == 0) numRecoVerticesHist->Fill(numRecoVertices);
+            count++;
 
             if (recoJetPt >= 30.0) {
                 numRecoJets++;
@@ -266,7 +268,6 @@ int main(int argc, char const *argv[]) {
         // create vector with all parton 4-momenta
         int numPartons = partonPdgId->size();
         std::vector<PseudoJet> particles;
-        //std::cout << "Individual partons" << std::endl;
         for (int j=0; j < numPartons; j++) {
             partonPtHist->Fill((*partonPt)[j]);
             particles.push_back( PseudoJet( (*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]) );
@@ -276,11 +277,6 @@ int main(int argc, char const *argv[]) {
             vertex.push_back((*partonVy)[j]);
             vertex.push_back((*partonVz)[j]);
             partonVertices.insert(vertex);
-            //std::cout << "  PDGID: " << (*partonPdgId)[j] << std::endl;
-            //std::cout << "  Pt: " << (*partonPt)[j] << std::endl;
-            //std::cout << "  Vx: " << (*partonVx)[j] << std::endl;
-            //std::cout << "  Vy: " << (*partonVy)[j] << std::endl;
-            //std::cout << "  Vz: " << (*partonVz)[j] << std::endl << std::endl;
         }
 
         // cluster partons into jet with anti-kt algorithm
@@ -311,9 +307,7 @@ int main(int argc, char const *argv[]) {
                 // pfCandsHad[j].set_user_index(j);
             }
         }
-        int nV = pfCandVertices.size();
-        std::cout << nV << std::endl;
-        numPfCandVerticesHist->Fill(nV);
+        numPfCandVerticesHist->Fill(pfCandVertices.size());
         assert(pfCandsHad.size() <= pfCandsAll.size());
 
         ClusterSequence pfSeqAll(pfCandsAll, jet_def);
@@ -335,7 +329,7 @@ int main(int argc, char const *argv[]) {
             if (constituents.size() > 2) index2 = constituents[2].user_index();
             if (constituents.size() > 3) index3 = constituents[3].user_index();
             if (constituents.size() > 4) index4 = constituents[4].user_index();
-            if (pfJetsAll[j].pt() >= 20.0) {
+            if (pfJetsAll[j].pt() >= 30.0) {
                 std::vector<float> vertex;
                 vertex.push_back((*pfCandVx)[index0]);
                 vertex.push_back((*pfCandVy)[index0]);
@@ -404,7 +398,7 @@ int main(int argc, char const *argv[]) {
                 << partonJets[j].rap() << " " 
                 << partonJets[j].phi_std() <<  " " 
                 << (*partonVx)[index0] << " "
-                <<(*partonVy)[index0] << " " 
+                << (*partonVy)[index0] << " " 
                 << (*partonVz)[index0] << " "
                 << constituents.size() << " " 
                 << (*partonPdgId)[index0]<< " " 
