@@ -2,6 +2,7 @@
 *.root
 *.txt
 models/
+*.png
 
 # executables
 *.out
