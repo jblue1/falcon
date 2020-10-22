@@ -63,20 +63,7 @@ int main(int arc, char const *argv[]) {
     for (int i=0; i < numEvents; i++) {
         tree1->GetEntry(i);
         tree3->GetEntry(i);
-        int tbar = 0;
-        int bbar = 0;
-        int cbar = 0;
-        int sbar = 0;
-        int ubar = 0;
-        int dbar = 0;
-        int d = 0;
-        int u = 0;
-        int s = 0;
-        int c = 0;
-        int b = 0;
-        int t = 0;
-        int g = 0;
-
+        
         assert(genJetEvent == partonEvent);
 
         int numPartons = partonPx->size();
@@ -95,6 +82,20 @@ int main(int arc, char const *argv[]) {
         if (partonJets.size() > 0) {
             for (size_t j=0; j< partonJets.size(); j++) {
                 if (partonJets[j].pt() > 20) {
+                    int tbar = 0;
+                    int bbar = 0;
+                    int cbar = 0;
+                    int sbar = 0;
+                    int ubar = 0;
+                    int dbar = 0;
+                    int d = 0;
+                    int u = 0;
+                    int s = 0;
+                    int c = 0;
+                    int b = 0;
+                    int t = 0;
+                    int g = 0;
+
                     std::vector<PseudoJet> constituents = sorted_by_pt(partonJets[j].constituents());
                     int index = constituents[0].user_index();
                     std::cout << "Highest Pt PdgId: " << (*partonPdgId)[index] << std::endl;
@@ -132,6 +133,8 @@ int main(int arc, char const *argv[]) {
                         }
                     }
                     if (minDR < 0.35) {
+                        int sum = tbar + bbar + cbar + sbar + ubar + dbar + d + u + s + c + b + t + g;
+                        assert(sum == 1);
                         write_out 
                             << partonJets[j].pt() << " " 
                             << partonJets[j].rap() << " " 
