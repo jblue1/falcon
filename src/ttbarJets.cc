@@ -45,8 +45,18 @@ int main(int argc, char const *argv[]) {
     TTree* tree = (TTree*) df->Get("eventTree");
 
 
-    //TFile h(histosPath.c_str(), "RECREATE");
+    TFile h(histosPath.c_str(), "RECREATE");
     // set up histograms
+    TH1* numMatchesPartonRecoHist = new TH1I("numMatchesPartonRecoHist", "Number of parton Jets with reco jet match (dR < 0.35) for each parton jet with Pt > 20GeV", 5, 0, 5);
+    TH1* numMatchesPartonGenHist = new TH1I("numMatchesPartonGenHist", "Number of parton jets with gen jet match", 5, 0, 5);
+    TH1* numMatchesGenPartonHist = new TH1I("numMatchesGenPartonHist", "Number of gen jets with parton jet match", 5, 0, 5);
+    TH1* numMatchesGenRecoHist = new TH1I("numMatchesGenRecoHist", "Number of gen jets with reco jet match", 5, 0, 5);
+    TH1* numMatchesRecoPartonHist = new TH1I("numMatchesRecoPartonHist", "Number of reco Jets with parton jet match (dR < 0.35) for each reco jet with Pt > 30GeV", 5, 0, 5);
+    TH1* numMatchesRecoGenHist = new TH1I("numMatchesRecoGenHist", "Number of reco jes with gen jet match", 5, 0, 5);
+    
+
+    TH1* partonPtNoRecoMatchHist = new TH1F("partonPtNoRecoMatchHist", "Pt distribution of parton jets with no reco match", 200, 0, 200);
+    TH1* recoPtNoPartonMatchHist = new TH1F("recoPtNoPartonMatchHist", "Pt distribution of reco jets with no parton match", 200, 0, 200);
 
     // file to write data as txt
     //std::ofstream write_out("./data/txt/" + txtFile);
@@ -55,6 +65,11 @@ int main(int argc, char const *argv[]) {
     std::vector<Float_t>* pfJetEta = 0;
     std::vector<Float_t>* pfJetPhi = 0;
 
+    std::vector<Float_t>* genJetPt = 0;
+    std::vector<Float_t>* genJetEta = 0;
+    std::vector<Float_t>* genJetPhi = 0;
+
+    
     std::vector<Float_t>* partonPx = 0;
     std::vector<Float_t>* partonPy = 0;
     std::vector<Float_t>* partonPz = 0;
@@ -63,6 +78,11 @@ int main(int argc, char const *argv[]) {
     tree->SetBranchAddress("pfJetPt", &pfJetPt);
     tree->SetBranchAddress("pfJetEta", &pfJetEta);
     tree->SetBranchAddress("pfJetPhi", &pfJetPhi);
+
+    tree->SetBranchAddress("genJetPt", &genJetPt);
+    tree->SetBranchAddress("genJetEta", &genJetEta);
+    tree->SetBranchAddress("genJetPhi", &genJetPhi);
+
 
     tree->SetBranchAddress("partonPx", &partonPx);
     tree->SetBranchAddress("partonPy", &partonPy);
@@ -102,81 +122,115 @@ int main(int argc, char const *argv[]) {
         // matches there are (and find min dR)
         if (partonJets.size() > 0) {
             for (size_t j=0; j < partonJets.size(); j++) {
-                
                 if (partonJets[j].pt() > 20) {
                     numPartonJets++;
-                    float partonEta = partonJets[j].rap();
-                    float partonPhi = partonJets[j].phi_std();
-                    float partonPt = partonJets[j].pt();
-                    //std::cout << "PartonJet: " << j << std::endl;
-                    //std::cout << "Eta: " << partonEta << std::endl;
-                    //std::cout << "Phi: " << partonPhi << std::endl;
-                    //std::cout << "Pt: " << partonPt << std::endl;
 
-                    int pfJetMatches = 0;
+                    int genJetMatches = 0;
                     float minDR = 10.0;
+                    for (size_t k=0; k < genJetPt->size(); k++) {
+                        if ((*genJetPt)[k] >= 30.0) {
+                            float dR = deltaR((*genJetEta)[k], (*genJetPhi)[k], partonJets[j].rap(), partonJets[j].phi_std());
+                            if (dR < 0.35) genJetMatches++;
+                            if (dR < minDR) minDR = dR;
+                        }
+                    }
+                    numMatchesPartonGenHist->Fill(genJetMatches);
+                    int pfJetMatches = 0;
+                    minDR = 10.0;
                     for (size_t k=0; k < pfJetPt->size(); k++) {
                         if ((*pfJetPt)[k] >= 30.0) {
-                            //std::cout << "  RecoJet: " << k << std::endl;
-                            //std::cout << "  Eta: " << (*pfJetEta)[k] << std::endl;
-                            //std::cout << "  Phi: " << (*pfJetPhi)[k] << std::endl;
-                            float dR = deltaR((*pfJetEta)[k], (*pfJetPhi)[k], partonEta, partonPhi);
-                            //std::cout << "  DR: " << dR << std::endl;
+                            float dR = deltaR((*pfJetEta)[k], (*pfJetPhi)[k], partonJets[j].rap(), partonJets[j].phi_std());
                             if (dR < 0.35) pfJetMatches++;
                             if (dR < minDR) minDR = dR;
                         }
                     }
+                    numMatchesPartonRecoHist->Fill(pfJetMatches);
                     if (pfJetMatches == 1) numPartonJetswMatch++;
-                    //std::cout << "Num Matches: " << pfJetMatches << std::endl;
-                    //std::cout << std::endl << std::endl;
+                    if (pfJetMatches == 0) partonPtNoRecoMatchHist->Fill(partonJets[j].pt());
                 }
             }
         }
+
+        // go through each gen  jet and find how many parton and reco jet
+        // matches there are (and find min dR)
+        if (genJetPt->size() > 0) {
+            for (size_t j=0; j < genJetPt->size(); j++) {
+                if ((*genJetPt)[j] >= 30.0) {
+                    int partonJetMatches = 0;
+                    float minDR = 10.0;
+                    for (size_t k=0; k < partonJets.size(); k++) {
+                        if (partonJets[k].pt() >= 20.0) {
+                            float dR = deltaR(partonJets[k].rap(), partonJets[k].phi_std(), (*genJetEta)[j], (*genJetPhi)[j]);
+                            if (dR < 0.35) partonJetMatches++;
+                            if (dR < minDR) minDR = dR;
+                        }
+                    }
+                    numMatchesGenPartonHist->Fill(partonJetMatches);
+                    int pfJetMatches = 0;
+                    minDR = 10.0;
+                    for (size_t k=0; k < pfJetPt->size(); k++) {
+                        if ((*pfJetPt)[k] >= 30.0) {
+                            float dR = deltaR((*pfJetEta)[k], (*pfJetPhi)[k], (*genJetEta)[j], (*genJetPhi)[j]);
+                            if (dR < 0.35) pfJetMatches++;
+                            if (dR < minDR) minDR = dR;
+                        }
+                    }
+                    numMatchesGenRecoHist->Fill(pfJetMatches);
+                }
+            }
+        }
+
 
         if (pfJetPt->size() > 0) {
             for (size_t j=0; j < pfJetPt->size(); j++) {
                 if ((*pfJetPt)[j] > 30.0) {
                     numRecoJets++;
-                    //std::cout << "RecoJet: " << j << std::endl;
-                    //std::cout << "Eta: " << (*pfJetEta)[j] << std::endl;
-                    //std::cout << "Phi: " << (*pfJetPhi)[j] << std::endl;
-                    //std::cout << "Pt: " << (*pfJetPt)[j] << std::endl; 
-
                     int partonJetMatches = 0;
                     float minDR = 10.0;
                     for (size_t k=0; k < partonJets.size(); k++) {
-                        if (partonJets[k].pt() > 20.0) {
+                        if (partonJets[k].pt() >= 20.0) {
                             float dR = deltaR(partonJets[k].rap(), partonJets[k].phi_std(), (*pfJetEta)[j], (*pfJetPhi)[j]);
-                            if (j == 3 && i == 3) {
-                                std::cout << "  PartonJet: " << j << std::endl;
-                                std::cout << "  Eta: " << partonJets[k].rap() << std::endl;
-                                std::cout << "  Phi: " << partonJets[k].phi_std() << std::endl;
-                                std::cout << "  Pt: " << partonJets[k].pt() << std::endl;
-                                std::cout << "  DR: " << dR << std::endl;
-                            }
-
                             if (dR < 0.35) partonJetMatches++;
                             if (dR < minDR) minDR = dR;
                         }
                     }
-                    
+                    numMatchesRecoPartonHist->Fill(partonJetMatches);
                     if (partonJetMatches == 1) numRecoJetswMatch++;
-                    if (partonJetMatches == 0) {
-                        std::cout << "Reco Jet with no match number: " << j << std::endl;
-                        std::cout << "Reco Jet with no match Pt: " << (*pfJetPt)[j] << std::endl;
-                        std::cout << "Reco Jet with no match Eta: " << (*pfJetEta)[j] << std::endl;
-                        std::cout << "Reco Jet with no match Phi: " << (*pfJetPhi)[j] << std::endl;
-                        std::cout << "Reco Jet with no match minDR: " << minDR << std::endl;
+                    if (partonJetMatches == 0) recoPtNoPartonMatchHist->Fill((*pfJetPt)[j]);
+
+                    int genJetMatches = 0;
+                    minDR = 10.0;
+                    for (size_t k=0; k < genJetPt->size(); k++) {
+                        if ((*genJetPt)[k] >= 20.0) {
+                            float dR = deltaR((*genJetEta)[k], (*genJetPhi)[k], (*pfJetEta)[j], (*pfJetPhi)[j]);
+                            if (dR < 0.35) genJetMatches++;
+                        }
                     }
-                    //std::cout << "Num matches for this reco jet: " << partonJetMatches << std::endl << std::endl;
+                    numMatchesRecoGenHist->Fill(genJetMatches);
                 }
             }
-
         }
     }
-    std::cout << "Num Reco Jets: " << numRecoJets << std::endl;
-    std::cout << "Num Reco Jets w/ Match: " << numRecoJetswMatch << std::endl;
-    std::cout << "Num Parton Jets: " << numPartonJets << std::endl;
-    std::cout << "Num Parton Jets w/ Match: " << numPartonJetswMatch << std::endl;
+
+    numMatchesPartonRecoHist->Write();
+    numMatchesPartonGenHist->Write();
+    numMatchesGenPartonHist->Write();
+    numMatchesGenRecoHist->Write();
+    numMatchesRecoPartonHist->Write();
+    numMatchesRecoGenHist->Write();
+    
+
+    partonPtNoRecoMatchHist->Write();
+    recoPtNoPartonMatchHist->Write();
+
+    delete numMatchesPartonRecoHist;
+    delete numMatchesPartonGenHist;
+    delete numMatchesGenPartonHist;
+    delete numMatchesGenRecoHist;
+    delete numMatchesRecoPartonHist;
+    delete numMatchesRecoGenHist;
+
+    delete partonPtNoRecoMatchHist;
+    delete recoPtNoPartonMatchHist;
     return 0;
 }

@@ -16,7 +16,7 @@ histos :
 	./bin/makeHistos.out JetNtuple_PfCands.root histos.root jetInfo.txt
 
 ttbarHistos :
-	./bin/makettbarHistos.out ttbarEvents.root ttbarHistos.root 
+	./bin/makettbarHistos.out ttbarEvents2.root ttbarHistos.root 
 
 data : 
 	./bin/makeData.out JetNtuple_partGenMatch.root matchData.txt
