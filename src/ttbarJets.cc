@@ -58,12 +58,23 @@ int main(int argc, char const *argv[]) {
     TH1* partonPtNoRecoMatchHist = new TH1F("partonPtNoRecoMatchHist", "Pt distribution of parton jets with no reco match", 200, 0, 200);
     TH1* recoPtNoPartonMatchHist = new TH1F("recoPtNoPartonMatchHist", "Pt distribution of reco jets with no parton match", 200, 0, 200);
 
+    TH1* minDRRecoPartonNoMatchHist = new TH1F("minDRRecoPartonNoMatchHist", "minDR for each reco jet with no parton match", 50, 0, 5);
+
+    TH1* emFractionRecoPartonNoMatchHist = new TH1F("emFractionRecoPartonNoMatchHist", "EM fraction of reco jets with no parton Match", 50, 0, 1);
+    TH1* emFractionRecoPartonMatchHist = new TH1F("emFractionRecoPartonMatchHist", "EM fraction of reco jets with parton match", 50, 0, 1);
+
+    TH1* partonPtHist = new TH1F("partonPtHist", "parton pt", 200, 0, 200);
+
     // file to write data as txt
     //std::ofstream write_out("./data/txt/" + txtFile);
     //assert(write_out.is_open());
     std::vector<Float_t>* pfJetPt = 0;
     std::vector<Float_t>* pfJetEta = 0;
     std::vector<Float_t>* pfJetPhi = 0;
+    std::vector<Float_t>* pfJetE = 0;
+    std::vector<Float_t>* pfJetPhotonEnergy = 0;
+    std::vector<Float_t>* pfJetElectronEnergy = 0;
+    std::vector<Float_t>* pfJetMuonEnergy = 0;
 
     std::vector<Float_t>* genJetPt = 0;
     std::vector<Float_t>* genJetEta = 0;
@@ -74,10 +85,15 @@ int main(int argc, char const *argv[]) {
     std::vector<Float_t>* partonPy = 0;
     std::vector<Float_t>* partonPz = 0;
     std::vector<Float_t>* partonE = 0;
+    std::vector<Float_t>* partonPt = 0;
 
     tree->SetBranchAddress("pfJetPt", &pfJetPt);
     tree->SetBranchAddress("pfJetEta", &pfJetEta);
     tree->SetBranchAddress("pfJetPhi", &pfJetPhi);
+    tree->SetBranchAddress("pfJetE", &pfJetE);
+    tree->SetBranchAddress("pfJetPhotonEnergy", &pfJetPhotonEnergy);
+    tree->SetBranchAddress("pfJetElectronEnergy", &pfJetElectronEnergy);
+    tree->SetBranchAddress("pfJetMuonEnergy", &pfJetMuonEnergy);
 
     tree->SetBranchAddress("genJetPt", &genJetPt);
     tree->SetBranchAddress("genJetEta", &genJetEta);
@@ -88,6 +104,7 @@ int main(int argc, char const *argv[]) {
     tree->SetBranchAddress("partonPy", &partonPy);
     tree->SetBranchAddress("partonPz", &partonPz);
     tree->SetBranchAddress("partonE", &partonE);
+    tree->SetBranchAddress("partonPt", &partonPt);
 
 
     //pfCandTree variables
@@ -109,6 +126,8 @@ int main(int argc, char const *argv[]) {
         std::vector<PseudoJet> particles;
         for (int j=0; j < numPartons; j++) {
             particles.push_back(PseudoJet((*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
+
+            partonPtHist->Fill((*partonPt)[j]);
         }
 
         // cluster partons into jet with anti-kt algorithm
@@ -122,7 +141,7 @@ int main(int argc, char const *argv[]) {
         // matches there are (and find min dR)
         if (partonJets.size() > 0) {
             for (size_t j=0; j < partonJets.size(); j++) {
-                if (partonJets[j].pt() > 20) {
+                if (partonJets[j].pt() >= 20.0) {
                     numPartonJets++;
 
                     int genJetMatches = 0;
@@ -195,8 +214,25 @@ int main(int argc, char const *argv[]) {
                         }
                     }
                     numMatchesRecoPartonHist->Fill(partonJetMatches);
-                    if (partonJetMatches == 1) numRecoJetswMatch++;
-                    if (partonJetMatches == 0) recoPtNoPartonMatchHist->Fill((*pfJetPt)[j]);
+                    if (partonJetMatches > 0) {
+                        numRecoJetswMatch++;
+                        float emFraction = ( (*pfJetPhotonEnergy)[j] + (*pfJetElectronEnergy)[j] + (*pfJetMuonEnergy)[j] ) / (*pfJetE)[j];
+                        emFractionRecoPartonMatchHist->Fill(emFraction);
+                    }
+                    if (partonJetMatches == 0) {
+                        recoPtNoPartonMatchHist->Fill((*pfJetPt)[j]);
+                        minDRRecoPartonNoMatchHist->Fill(minDR);
+                        std::cout << "Event: " << i << " has a reco jet with no parton match." << std::endl;
+                        std::cout << "  Reco Jet Pt: " << (*pfJetPt)[j] << std::endl;
+                        std::cout << "  Reco Jet Eta: " << (*pfJetEta)[j] << std::endl;
+                        std::cout << "  Reco Jet Phi: " << (*pfJetPhi)[j] << std::endl;
+                        std::cout << "  Reco Jet Photon Energy: " << (*pfJetPhotonEnergy)[j] << std::endl;
+                        std::cout << "  Reco Jet Electron Energy: " << (*pfJetElectronEnergy)[j] << std::endl;
+                        std::cout << "  Reco Jet Muon Energy: " << (*pfJetMuonEnergy)[j] << std::endl;
+                        std::cout << "  Reco Jet Energy: " << (*pfJetE)[j] << std::endl;
+                        float emFraction = ( (*pfJetPhotonEnergy)[j] + (*pfJetElectronEnergy)[j] + (*pfJetMuonEnergy)[j] ) / (*pfJetE)[j];
+                        emFractionRecoPartonNoMatchHist->Fill(emFraction);
+                    }
 
                     int genJetMatches = 0;
                     minDR = 10.0;
@@ -223,6 +259,13 @@ int main(int argc, char const *argv[]) {
     partonPtNoRecoMatchHist->Write();
     recoPtNoPartonMatchHist->Write();
 
+    minDRRecoPartonNoMatchHist->Write();
+
+    emFractionRecoPartonNoMatchHist->Write();
+    emFractionRecoPartonMatchHist->Write();
+
+    partonPtHist->Write();
+
     delete numMatchesPartonRecoHist;
     delete numMatchesPartonGenHist;
     delete numMatchesGenPartonHist;
@@ -232,5 +275,14 @@ int main(int argc, char const *argv[]) {
 
     delete partonPtNoRecoMatchHist;
     delete recoPtNoPartonMatchHist;
+
+    delete minDRRecoPartonNoMatchHist;
+
+    delete emFractionRecoPartonNoMatchHist;
+    delete emFractionRecoPartonMatchHist;
+
+    delete partonPtHist;
+
+
     return 0;
 }
