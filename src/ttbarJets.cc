@@ -117,8 +117,8 @@ int main(int argc, char const *argv[]) {
 
     // loop through events
     for (int i=0; i < numEvents; i++) {
-        std::cout << "Event: " << i << std::endl;
-        std::cout << "=======================================" << std::endl;
+        //std::cout << "Event: " << i << std::endl;
+        //std::cout << "=======================================" << std::endl;
         tree->GetEntry(i);
 
         // create vector with all parton 4-momenta
@@ -142,6 +142,11 @@ int main(int argc, char const *argv[]) {
         if (partonJets.size() > 0) {
             for (size_t j=0; j < partonJets.size(); j++) {
                 if (partonJets[j].pt() >= 20.0) {
+                    if (i % 1000 == 0) {
+                        std::cout << "Event: " << i << std::endl;
+                        std::cout << "Parton Jet Pt: " << partonJets[j].pt() << std::endl;
+
+                    }
                     numPartonJets++;
 
                     int genJetMatches = 0;
@@ -222,6 +227,7 @@ int main(int argc, char const *argv[]) {
                     if (partonJetMatches == 0) {
                         recoPtNoPartonMatchHist->Fill((*pfJetPt)[j]);
                         minDRRecoPartonNoMatchHist->Fill(minDR);
+                        /*
                         std::cout << "Event: " << i << " has a reco jet with no parton match." << std::endl;
                         std::cout << "  Reco Jet Pt: " << (*pfJetPt)[j] << std::endl;
                         std::cout << "  Reco Jet Eta: " << (*pfJetEta)[j] << std::endl;
@@ -230,6 +236,7 @@ int main(int argc, char const *argv[]) {
                         std::cout << "  Reco Jet Electron Energy: " << (*pfJetElectronEnergy)[j] << std::endl;
                         std::cout << "  Reco Jet Muon Energy: " << (*pfJetMuonEnergy)[j] << std::endl;
                         std::cout << "  Reco Jet Energy: " << (*pfJetE)[j] << std::endl;
+                        */
                         float emFraction = ( (*pfJetPhotonEnergy)[j] + (*pfJetElectronEnergy)[j] + (*pfJetMuonEnergy)[j] ) / (*pfJetE)[j];
                         emFractionRecoPartonNoMatchHist->Fill(emFraction);
                     }
