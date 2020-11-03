@@ -11,11 +11,11 @@ def main():
     print(tf.config.list_physical_devices())
     today = str(date.today())
     run_number = 0
-    save_dir = '../models/Run_' + str(run_number) + '_' + today
+    save_dir = '../models/FCNN/Run_' + str(run_number) + '_' + today
     
     while (os.path.exists(save_dir)):
         run_number += 1
-        save_dir = '../models/Run_' + str(run_number)  + '_' + today
+        save_dir = '../models/FCNN/Run_' + str(run_number)  + '_' + today
 
     print("SAVE DIR: " + save_dir)
     os.makedirs(save_dir)
@@ -27,7 +27,7 @@ def main():
         with redirect_stdout(f):
             net.summary()
 
-    data = np.loadtxt('../data/txt/matchData.txt', skiprows=2)
+    data = np.loadtxt('../data/txt/matchttbarDataTot.txt', skiprows=2)
     partonPtMax = np.max(data[:, 0], axis=0)
     partonPtMin = np.min(data[:, 0], axis=0)
     partonMean = np.mean(data[:, 1:3], axis=0)
@@ -35,31 +35,33 @@ def main():
     partonEMax = np.max(data[:, 3], axis=0)
     partonEMin = np.min(data[:, 3], axis=0)
     
-    genPtMax = np.max(data[:, 17], axis=0)
-    genPtMin = np.min(data[:, 17], axis=0)
-    genMean = np.mean(data[:, 18:20], axis=0)
-    genStd = np.std(data[:, 18:20], axis=0)
-    genEMax = np.max(data[:, 20], axis=0)
-    genEMin = np.min(data[:, 20], axis=0)
+    pfPtMax = np.max(data[:, 4], axis=0)
+    pfPtMin = np.min(data[:, 4], axis=0)
+    pfMean = np.mean(data[:, 5:7], axis=0)
+    pfStd = np.std(data[:, 5:7], axis=0)
+    pfEMax = np.max(data[:, 7], axis=0)
+    pfEMin = np.min(data[:, 7], axis=0)
 
     data[:, 0] = (data[:, 0] - partonPtMin)/partonPtMax
     data[:, 1:3] = (data[:, 1:3] - partonMean)/partonStd
     data[:, 3] = (data[:, 3] - partonEMin)/partonEMax
-    data[:, 17] = (data[:, 17] - genPtMin)/genPtMax
-    data[:, 18:20] = (data[:, 18:20] - genMean)/genStd
-    data[:, 20] = (data[:, 20] - genEMin)/genEMax
+    data[:, 4] = (data[:, 4] - pfPtMin)/pfPtMax
+    data[:, 5:7] = (data[:, 5:7] - pfMean)/pfStd
+    data[:, 7] = (data[:, 7] - pfEMin)/pfEMax
     '''
     mean = np.mean(data, axis=0)
     std = np.std(data, axis=0)
     data = (data - mean)/std
     '''
     index = int(0.8*len(data))
+    print("Number of training examples: {}".format(index))
+    print("Number of validation examples: {}".format(len(data) - index))
     train = data[:index, :]
-    trainParton = train[:, :17]
-    trainGen = train[:, 17:]
+    trainParton = train[:, :4]
+    trainPf = train[:, 4:]
     validate = data[index:, :]
-    validateParton = validate[:, :17]
-    validateGen = validate[:, 17:]
+    validateParton = validate[:, :4]
+    validatePf = validate[:, 4:]
     
     checkpoint_path = os.path.join(save_dir, 'training/cp.cpkt')
     checkpoint_dir = os.path.dirname(checkpoint_path)
@@ -69,15 +71,15 @@ def main():
             verbose=1,
             save_best_only=True)
 
-    net.compile(optimizer=keras.optimizers.Adam(learning_rate=2e-4),
+    net.compile(optimizer=keras.optimizers.Adam(learning_rate=1e-4),
            loss=keras.losses.MeanAbsoluteError(),
            metrics=[keras.metrics.MeanAbsoluteError()])
 
     history = net.fit(trainParton,
-            trainGen,
+            trainPf,
             batch_size=64,
-            epochs=500,
-            validation_data=(validateParton, validateGen),
+            epochs=1000,
+            validation_data=(validateParton, validatePf),
             callbacks=[cp_callback])
 
     loss = pd.Series(history.history['loss'])
