@@ -65,6 +65,16 @@ int main(int argc, char const *argv[]) {
 
     TH1* partonPtHist = new TH1F("partonPtHist", "parton pt", 200, 0, 200);
 
+
+
+    TH1* recoEtaDistributionPartonMatchHist = new TH1F("recoEtaDistributionPartonMatchHist", "Eta distribution of reco jets with a parton match", 50, -5, 5);
+    TH1* recoEtaDistributionPtDiscrepencyHist = new TH1F("recoEtaDistributionPtDiscrepencyHist", "Eta distribution of reco jet with recoPt/partonPt < 0.75", 50, -5, 5);
+
+    TH1* emFractionRecoPartonMatchPtDiscrepencyHist = new TH1F("emFractionRecoPartonMatchPtDiscrepencyHist", 
+            "EM Fraction of reco jets with recoPt/partonPt < 0.75", 50, 0, 1);
+
+
+
     // file to write data as txt
     //std::ofstream write_out("./data/txt/" + txtFile);
     //assert(write_out.is_open());
@@ -211,11 +221,15 @@ int main(int argc, char const *argv[]) {
                     numRecoJets++;
                     int partonJetMatches = 0;
                     float minDR = 10.0;
+                    int matchIndex = -1;
                     for (size_t k=0; k < partonJets.size(); k++) {
                         if (partonJets[k].pt() >= 20.0) {
                             float dR = deltaR(partonJets[k].rap(), partonJets[k].phi_std(), (*pfJetEta)[j], (*pfJetPhi)[j]);
                             if (dR < 0.35) partonJetMatches++;
-                            if (dR < minDR) minDR = dR;
+                            if (dR < minDR) {
+                                minDR = dR;
+                                matchIndex = k;
+                            }
                         }
                     }
                     numMatchesRecoPartonHist->Fill(partonJetMatches);
@@ -223,6 +237,12 @@ int main(int argc, char const *argv[]) {
                         numRecoJetswMatch++;
                         float emFraction = ( (*pfJetPhotonEnergy)[j] + (*pfJetElectronEnergy)[j] + (*pfJetMuonEnergy)[j] ) / (*pfJetE)[j];
                         emFractionRecoPartonMatchHist->Fill(emFraction);
+                        recoEtaDistributionPartonMatchHist->Fill((*pfJetEta)[j]);
+                        float ptRatio = (*pfJetEta)[j] / partonJets[matchIndex].rap();
+                        if (ptRatio < 0.75) {
+                            recoEtaDistributionPtDiscrepencyHist->Fill((*pfJetEta)[j]);
+                            emFractionRecoPartonMatchPtDiscrepencyHist->Fill(emFraction);
+                        }
                     }
                     if (partonJetMatches == 0) {
                         recoPtNoPartonMatchHist->Fill((*pfJetPt)[j]);
@@ -273,6 +293,11 @@ int main(int argc, char const *argv[]) {
 
     partonPtHist->Write();
 
+    recoEtaDistributionPartonMatchHist->Write();
+    recoEtaDistributionPtDiscrepencyHist->Write();
+
+    emFractionRecoPartonMatchPtDiscrepencyHist->Write();
+
     delete numMatchesPartonRecoHist;
     delete numMatchesPartonGenHist;
     delete numMatchesGenPartonHist;
@@ -289,6 +314,11 @@ int main(int argc, char const *argv[]) {
     delete emFractionRecoPartonMatchHist;
 
     delete partonPtHist;
+
+    delete recoEtaDistributionPartonMatchHist;
+    delete recoEtaDistributionPtDiscrepencyHist;
+
+    delete emFractionRecoPartonMatchPtDiscrepencyHist;
 
 
     return 0;
