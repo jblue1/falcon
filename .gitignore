@@ -12,3 +12,6 @@ models/
 *.ipynb_checkpoints
 *checkpoint.ipynb
 
+# old scripts
+old/
+
