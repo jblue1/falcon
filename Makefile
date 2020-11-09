@@ -19,14 +19,14 @@ histos :
 	./bin/makeHistos.out JetNtuple_PfCands.root histos.root jetInfo.txt
 
 ttbarHistos :
-	./bin/makettbarHistos.out ttbarEvents3.root ttbarHistos.root 
+	./bin/makettbarHistos.out ttbarEventsHad.root ttbarHistos.root 
 
 data : 
 	./bin/makeData.out JetNtuple_partGenMatch.root matchData.txt
 	
 ttbardata : src/makettbarData.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -o bin/makettbarData.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
-	./bin/makettbarData.out ttbarEvents4.root matchttbarData3.txt
+	./bin/makettbarData.out ttbarEvents4.root matchttbarDataTest.txt
 
 
 clean :
