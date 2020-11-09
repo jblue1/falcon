@@ -30,6 +30,12 @@ int main(int arc, char const *argv[]) {
     std::vector<Float_t>* partonPz = 0;
     std::vector<Float_t>* partonE = 0;
 
+    std::vector<Float_t>* genJetPt = 0;
+    std::vector<Float_t>* genJetEta = 0;
+    std::vector<Float_t>* genJetPhi = 0;
+    std::vector<Float_t>* genJetE = 0;
+
+
     std::vector<Float_t>* pfJetPt = 0;
     std::vector<Float_t>* pfJetEta = 0;
     std::vector<Float_t>* pfJetPhi = 0;
@@ -40,10 +46,17 @@ int main(int arc, char const *argv[]) {
     tree->SetBranchAddress("pfJetPhi", &pfJetPhi);
     tree->SetBranchAddress("pfJetE", &pfJetE);
 
+    tree->SetBranchAddress("genJetPt", &genJetPt);
+    tree->SetBranchAddress("genJetEta", &genJetEta);
+    tree->SetBranchAddress("genJetPhi", &genJetPhi);
+    tree->SetBranchAddress("genJetE", &genJetE);
+
+
     tree->SetBranchAddress("partonPx", &partonPx);
     tree->SetBranchAddress("partonPy", &partonPy);
     tree->SetBranchAddress("partonPz", &partonPz);
     tree->SetBranchAddress("partonE", &partonE);
+    //tree->SetBranchAddress("partonPdgId", &partonPdgId);
 
     int numEvents = tree->GetEntries();
 
@@ -66,29 +79,47 @@ int main(int arc, char const *argv[]) {
         if (partonJets.size() > 0) {
             for (size_t j=0; j< partonJets.size(); j++) {
                 if (partonJets[j].pt() > 20) {
-                    float minDR = 10.0;
-                    int jetIndex = 0;
+                    float minDRPfJet = 10.0;
+                    int pfJetIndex = 0;
                     for (size_t k=0; k < pfJetPt->size(); k++) {
                         if ((*pfJetPt)[k] > 30) {
                             float dR = deltaR((*pfJetEta)[k], (*pfJetPhi)[k], partonJets[j].rap(), 
                                     partonJets[j].phi_std());
-                            if (dR < minDR) {
-                                minDR = dR;
-                                jetIndex = k;
+                            if (dR < minDRPfJet) {
+                                minDRPfJet = dR;
+                                pfJetIndex = k;
                             }
                         }
                     }
-                    std::cout << "min DR = " << minDR << std::endl;
-                    if (minDR < 0.35) {
+                    std::cout << "min DR = " << minDRPfJet << std::endl;
+
+                    float minDRGenJet = 10.0;
+                    int genJetIndex = 0;
+                    for (size_t k=0; k < genJetPt->size(); k++) {
+                        if ((*genJetPt)[k] > 30) {
+                            float dR = deltaR((*genJetEta)[k], (*genJetPhi)[k], partonJets[j].rap(), 
+                                    partonJets[j].phi_std());
+                            if (dR < minDRGenJet) {
+                                minDRGenJet = dR;
+                                genJetIndex = k;
+                            }
+                        }
+                    }
+
+                    if (minDRPfJet < 0.35 && minDRGenJet < 0.35) {
                         write_out 
                             << partonJets[j].pt() << " " 
                             << partonJets[j].rap() << " " 
                             << partonJets[j].phi_std() << " " 
                             << partonJets[j].e() << " " 
-                            << (*pfJetPt)[jetIndex] << " "
-                            << (*pfJetEta)[jetIndex] << " " 
-                            << (*pfJetPhi)[jetIndex] << " "
-                            << (*pfJetE)[jetIndex] << std::endl;
+                            << (*genJetPt)[genJetIndex] << " "
+                            << (*genJetEta)[genJetIndex] << " " 
+                            << (*genJetPhi)[genJetIndex] << " "
+                            << (*genJetE)[genJetIndex] << " " 
+                            << (*pfJetPt)[pfJetIndex] << " "
+                            << (*pfJetEta)[pfJetIndex] << " " 
+                            << (*pfJetPhi)[pfJetIndex] << " "
+                            << (*pfJetE)[pfJetIndex] << std::endl;
                         //std::cout << "Parton Pt: " << partonJets[j].pt() << std::endl;
                         //std::cout << "Gen Pt: " << (*genJetPt)[jetIndex] << std::endl;
                         //std::cout << "Parton Eta: " << partonJets[j].rap() << std::endl;
