@@ -44,6 +44,9 @@ int main(int argc, char const *argv[]) {
     TDirectoryFile* df = (TDirectoryFile*) f.Get("demo");
     TTree* tree = (TTree*) df->Get("eventTree");
 
+    std::ofstream write_out("./data/txt/partHadE.txt");
+    assert(write_out.is_open());
+
 
     TFile h(histosPath.c_str(), "RECREATE");
     // set up histograms
@@ -96,6 +99,13 @@ int main(int argc, char const *argv[]) {
     std::vector<Float_t>* partonPz = 0;
     std::vector<Float_t>* partonE = 0;
     std::vector<Float_t>* partonPt = 0;
+    std::vector<Int_t>* partonPdgId = 0;
+    std::vector<Int_t>* partonStatus = 0;
+
+    std::vector<Float_t>* hadronPx = 0;
+    std::vector<Float_t>* hadronPy = 0;
+    std::vector<Float_t>* hadronPz = 0;
+    std::vector<Float_t>* hadronE = 0;
 
     tree->SetBranchAddress("pfJetPt", &pfJetPt);
     tree->SetBranchAddress("pfJetEta", &pfJetEta);
@@ -115,6 +125,13 @@ int main(int argc, char const *argv[]) {
     tree->SetBranchAddress("partonPz", &partonPz);
     tree->SetBranchAddress("partonE", &partonE);
     tree->SetBranchAddress("partonPt", &partonPt);
+    tree->SetBranchAddress("partonPdgId", &partonPdgId); 
+    tree->SetBranchAddress("partonStatus", &partonStatus);
+
+    tree->SetBranchAddress("hadronPx", &hadronPx);
+    tree->SetBranchAddress("hadronPy", &hadronPy);
+    tree->SetBranchAddress("hadronPz", &hadronPz);
+    tree->SetBranchAddress("hadronE", &hadronE);
 
 
     //pfCandTree variables
@@ -133,12 +150,48 @@ int main(int argc, char const *argv[]) {
 
         // create vector with all parton 4-momenta
         int numPartons = partonPx->size();
+        float partonPxTot = 0;
+        float partonPyTot = 0;
+        float partonPzTot = 0;
+        float partonETot = 0;
         std::vector<PseudoJet> particles;
         for (int j=0; j < numPartons; j++) {
-            particles.push_back(PseudoJet((*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
+            if ((*partonStatus)[j] != 72) {
+                particles.push_back(PseudoJet((*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
+                partonPxTot += (*partonPx)[j];
+                partonPyTot += (*partonPy)[j];
+                partonPzTot += (*partonPz)[j];
+                partonETot += (*partonE)[j];
+
+            }
 
             partonPtHist->Fill((*partonPt)[j]);
         }
+
+        std::cout << "Parton Px Tot: " << partonPxTot << std::endl;
+        std::cout << "Parton Py Tot: " << partonPyTot << std::endl;
+        std::cout << "Parton Pz Tot: " << partonPzTot << std::endl;
+        std::cout << "Parton E Tot: " << partonETot << std::endl;
+
+        int numHadrons = hadronPx->size();
+        float hadronPxTot = 0;
+        float hadronPyTot = 0;
+        float hadronPzTot = 0;
+        float hadronETot = 0;
+        for (int j=0; j < numHadrons; j++) {
+            hadronPxTot += (*hadronPx)[j];
+            hadronPyTot += (*hadronPy)[j];
+            hadronPzTot += (*hadronPz)[j];
+            hadronETot += (*hadronE)[j];
+        }
+
+        std::cout << "Hadron Px Tot: " << hadronPxTot << std::endl;
+        std::cout << "Hadron Py Tot: " << hadronPyTot << std::endl;
+        std::cout << "Hadron Pz Tot: " << hadronPzTot << std::endl;
+        std::cout << "Hadron E Tot: " << hadronETot << std::endl;
+
+        write_out << partonETot << " " << hadronETot << std::endl;
+
 
         // cluster partons into jet with anti-kt algorithm
         double R = 0.4;
@@ -319,6 +372,8 @@ int main(int argc, char const *argv[]) {
     delete recoEtaDistributionPtDiscrepencyHist;
 
     delete emFractionRecoPartonMatchPtDiscrepencyHist;
+
+    write_out.close();
 
 
     return 0;
