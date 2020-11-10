@@ -11,8 +11,8 @@ using namespace fastjet;
 int main(int arc, char const *argv[]) {
     std::string dataFile(argv[1]);
     std::string txtFile(argv[2]);
-    std::string dataPath = "./data/root/" + dataFile;
-    std::string txtPath = "./data/txt/" + txtFile;
+    std::string dataPath = "./data/raw/" + dataFile;
+    std::string txtPath = "./data/processed/" + txtFile;
 
     TFile f(dataPath.c_str());
     TDirectoryFile* df = (TDirectoryFile*) f.Get("demo");
