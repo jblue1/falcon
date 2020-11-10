@@ -35,8 +35,8 @@ int main(int argc, char const *argv[]) {
     std::string  dataFile(argv[1]);
     std::string  histosFile(argv[2]);
     //std::string  txtFile(argv[3]);
-    std::string dataPath = "./data/root/" + dataFile;
-    std::string histosPath = "./data/root/" + histosFile;
+    std::string dataPath = "./data/raw/" + dataFile;
+    std::string histosPath = "./data/plots/" + histosFile;
     //std::string txtPath = "./data/txt/" + txtFile;
     // open data file and get trees
 
