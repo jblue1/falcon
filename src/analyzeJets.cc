@@ -28,24 +28,30 @@ void usage(std::ostream &out, const char *msg) {
 }
 
 int main(int argc, char const *argv[]) {
-    if (argc != 3) {
+    if (argc != 4) {
         usage(std::cerr, "Incorrect number of parameters given.");
     }
 
     std::string  dataFile(argv[1]);
     std::string  histosFile(argv[2]);
-    //std::string  txtFile(argv[3]);
+    std::string  txtFile(argv[3]);
     std::string dataPath = "./data/raw/" + dataFile;
     std::string histosPath = "./data/plots/" + histosFile;
-    //std::string txtPath = "./data/txt/" + txtFile;
+    std::string txtPath1 = "./data/processed/" + txtFile + "particles.txt";
+    std::string txtPath2 = "./data/processed/" + txtFile + "jets.txt";
     // open data file and get trees
 
     TFile f(dataPath.c_str());
     TDirectoryFile* df = (TDirectoryFile*) f.Get("demo");
     TTree* tree = (TTree*) df->Get("eventTree");
 
-    std::ofstream write_out("./data/txt/partHadE.txt");
-    assert(write_out.is_open());
+    std::ofstream write_out_particles(txtPath1);
+    std::ofstream write_out_jets(txtPath2);
+    assert(write_out_particles.is_open());
+    assert(write_out_jets.is_open());
+
+    write_out_particles << "event status pdgId Pt Eta Phi E" << std::endl;
+    write_out_jets << "event part/gen/reco(0/1/2) Pt Eta Phi E" << std::endl;
 
 
     TFile h(histosPath.c_str(), "RECREATE");
@@ -92,6 +98,7 @@ int main(int argc, char const *argv[]) {
     std::vector<Float_t>* genJetPt = 0;
     std::vector<Float_t>* genJetEta = 0;
     std::vector<Float_t>* genJetPhi = 0;
+    std::vector<Float_t>* genJetE = 0;
 
     
     std::vector<Float_t>* partonPx = 0;
@@ -99,13 +106,20 @@ int main(int argc, char const *argv[]) {
     std::vector<Float_t>* partonPz = 0;
     std::vector<Float_t>* partonE = 0;
     std::vector<Float_t>* partonPt = 0;
+    std::vector<Float_t>* partonEta = 0;
+    std::vector<Float_t>* partonPhi = 0;
     std::vector<Int_t>* partonPdgId = 0;
     std::vector<Int_t>* partonStatus = 0;
 
     std::vector<Float_t>* hadronPx = 0;
     std::vector<Float_t>* hadronPy = 0;
     std::vector<Float_t>* hadronPz = 0;
+    std::vector<Float_t>* hadronPt = 0;
+    std::vector<Float_t>* hadronEta = 0;
+    std::vector<Float_t>* hadronPhi = 0;
     std::vector<Float_t>* hadronE = 0;
+    std::vector<Int_t>* hadronStatus = 0;
+    std::vector<Int_t>* hadronPdgId = 0;
 
     tree->SetBranchAddress("pfJetPt", &pfJetPt);
     tree->SetBranchAddress("pfJetEta", &pfJetEta);
@@ -118,6 +132,7 @@ int main(int argc, char const *argv[]) {
     tree->SetBranchAddress("genJetPt", &genJetPt);
     tree->SetBranchAddress("genJetEta", &genJetEta);
     tree->SetBranchAddress("genJetPhi", &genJetPhi);
+    tree->SetBranchAddress("genJetE", &genJetE);
 
 
     tree->SetBranchAddress("partonPx", &partonPx);
@@ -125,6 +140,8 @@ int main(int argc, char const *argv[]) {
     tree->SetBranchAddress("partonPz", &partonPz);
     tree->SetBranchAddress("partonE", &partonE);
     tree->SetBranchAddress("partonPt", &partonPt);
+    tree->SetBranchAddress("partonEta", &partonEta);
+    tree->SetBranchAddress("partonPhi", &partonPhi);
     tree->SetBranchAddress("partonPdgId", &partonPdgId); 
     tree->SetBranchAddress("partonStatus", &partonStatus);
 
@@ -132,6 +149,11 @@ int main(int argc, char const *argv[]) {
     tree->SetBranchAddress("hadronPy", &hadronPy);
     tree->SetBranchAddress("hadronPz", &hadronPz);
     tree->SetBranchAddress("hadronE", &hadronE);
+    tree->SetBranchAddress("hadronEta", &hadronEta);
+    tree->SetBranchAddress("hadronPhi", &hadronPhi);
+    tree->SetBranchAddress("hadronStatus", &hadronStatus);
+    tree->SetBranchAddress("hadronPdgId", &hadronPdgId);
+    tree->SetBranchAddress("hadronPt", &hadronPt);
 
 
     //pfCandTree variables
@@ -156,16 +178,19 @@ int main(int argc, char const *argv[]) {
         float partonETot = 0;
         std::vector<PseudoJet> particles;
         for (int j=0; j < numPartons; j++) {
-            if ((*partonStatus)[j] != 72) {
-                particles.push_back(PseudoJet((*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
-                partonPxTot += (*partonPx)[j];
-                partonPyTot += (*partonPy)[j];
-                partonPzTot += (*partonPz)[j];
-                partonETot += (*partonE)[j];
-
-            }
-
+            particles.push_back(PseudoJet((*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
+            partonPxTot += (*partonPx)[j];
+            partonPyTot += (*partonPy)[j];
+            partonPzTot += (*partonPz)[j];
+            partonETot += (*partonE)[j];
             partonPtHist->Fill((*partonPt)[j]);
+            write_out_particles << i << " "
+                << (*partonStatus)[j] << " "
+                << (*partonPdgId)[j] << " "
+                << (*partonPt)[j] << " "
+                << (*partonEta)[j] << " "
+                << (*partonPhi)[j] << " "
+                << (*partonE)[j] << std::endl; 
         }
 
         std::cout << "Parton Px Tot: " << partonPxTot << std::endl;
@@ -183,6 +208,14 @@ int main(int argc, char const *argv[]) {
             hadronPyTot += (*hadronPy)[j];
             hadronPzTot += (*hadronPz)[j];
             hadronETot += (*hadronE)[j];
+            write_out_particles << i << " "
+                << (*hadronStatus)[j] << " "
+                << (*hadronPdgId)[j] << " "
+                << (*hadronPt)[j] << " "
+                << (*hadronEta)[j] << " "
+                << (*hadronPhi)[j] << " "
+                << (*hadronE)[j] << std::endl; 
+
         }
 
         std::cout << "Hadron Px Tot: " << hadronPxTot << std::endl;
@@ -190,7 +223,6 @@ int main(int argc, char const *argv[]) {
         std::cout << "Hadron Pz Tot: " << hadronPzTot << std::endl;
         std::cout << "Hadron E Tot: " << hadronETot << std::endl;
 
-        write_out << partonETot << " " << hadronETot << std::endl;
 
 
         // cluster partons into jet with anti-kt algorithm
@@ -204,6 +236,12 @@ int main(int argc, char const *argv[]) {
         // matches there are (and find min dR)
         if (partonJets.size() > 0) {
             for (size_t j=0; j < partonJets.size(); j++) {
+                write_out_jets << i << " "
+                    << 0 << " "
+                    << partonJets[j].pt() << " "
+                    << partonJets[j].eta() << " "
+                    << partonJets[j].phi_std() << " "
+                    << partonJets[j].E() << std::endl;
                 if (partonJets[j].pt() >= 20.0) {
                     if (i % 1000 == 0) {
                         std::cout << "Event: " << i << std::endl;
@@ -242,6 +280,12 @@ int main(int argc, char const *argv[]) {
         // matches there are (and find min dR)
         if (genJetPt->size() > 0) {
             for (size_t j=0; j < genJetPt->size(); j++) {
+                write_out_jets << i << " "
+                    << 1 << " "
+                    << (*genJetPt)[j] << " "
+                    << (*genJetEta)[j] << " "
+                    << (*genJetPhi)[j] << " "
+                    << (*genJetE)[j] << std::endl;
                 if ((*genJetPt)[j] >= 30.0) {
                     int partonJetMatches = 0;
                     float minDR = 10.0;
@@ -270,6 +314,12 @@ int main(int argc, char const *argv[]) {
 
         if (pfJetPt->size() > 0) {
             for (size_t j=0; j < pfJetPt->size(); j++) {
+                write_out_jets << i << " "
+                    << 2 << " "
+                    << (*pfJetPt)[j] << " "
+                    << (*pfJetEta)[j] << " "
+                    << (*pfJetPhi)[j] << " "
+                    << (*pfJetE)[j] << std::endl;
                 if ((*pfJetPt)[j] > 30.0) {
                     numRecoJets++;
                     int partonJetMatches = 0;
@@ -373,7 +423,8 @@ int main(int argc, char const *argv[]) {
 
     delete emFractionRecoPartonMatchPtDiscrepencyHist;
 
-    write_out.close();
+    write_out_particles.close();
+    write_out_jets.close();
 
 
     return 0;
