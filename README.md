@@ -1,5 +1,5 @@
 # Falcon
-Using machine learning to build a fast detector simulator that maps parton jets to reco-jets. This project uses data generated [here](https://github.com/jblue1/JetNtupleProducerTool/tree/partons).
+Using machine learning to build a fast detector simulator that maps parton jets to reco-jets. This project uses data generated [here](https://github.com/jblue1/EventGeneration/).
 ## Requirements
  - [Root](https://root.cern/install/) (tested on version 6.22.2)
  - [FastJet](http://fastjet.fr/) (tested on version 3.3.4)
