@@ -8,6 +8,54 @@ from contextlib import redirect_stdout
 import os
 
 BATCH_SIZE=64
+cross_entropy = tf.keras.losses.BinaryCrossentropy()
+gen_optimizer = tf.keras.optimizers.Adam(1e-4)
+disc_optimizer = tf.keras.optimizers.Adam(1e-4)
+gen= model.make_generator()
+disc= model.make_discriminator()
+
+
+
+def discriminator_loss(real_output, fake_output):
+    real_loss = cross_entropy(tf.ones_like(real_output), real_output)
+    fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
+    total_loss = real_loss + fake_loss
+    return total_loss
+
+def generator_loss(fake_output):
+    return cross_entropy(tf.ones_like(fake_output), fake_output)
+
+@tf.function
+def train_step(pJets, rJets):
+    shape = tf.shape(pJets)
+    noise = tf.random.normal(shape, 0, 1, tf.float32)
+
+    #with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+    with tf.GradientTape(persistent=True) as tape:
+        generated_rJets = gen([pJets, noise], training=True)
+
+        fake_output = disc([pJets, generated_rJets], training=True)
+        real_output = disc([pJets, rJets], training=True)
+
+        gen_loss = generator_loss(fake_output)
+        disc_loss = discriminator_loss(real_output, fake_output)
+
+    gen_grads = tape.gradient(gen_loss, gen.trainable_variables)
+    disc_grads = tape.gradient(disc_loss, disc.trainable_variables)
+
+    gen_optimizer.apply_gradients(zip(gen_grads, gen.trainable_variables))
+    disc_optimizer.apply_gradients(zip(disc_grads,
+        disc.trainable_variables))
+
+def train(dataset, epochs):
+    for epoch in range(epochs):
+        start = time.time()
+
+        for jet_batch in dataset:
+            train_step(jet_batch[0], jet_batch[1])
+
+
+        print('Time for epoch {} is {}'.format(epoch+1, time.time() - start))
 
 
 def main():
@@ -25,11 +73,7 @@ def main():
     assert(os.path.isdir(save_dir))
     '''
     
-    gen= model.make_generator()
-    disc= model.make_discriminator()
-
-    gen_optimizer = tf.keras.optimizers.Adam(1e-4)
-    disc_optimizer = tf.keras.optimizers.Adam(1e-4)
+    
     '''
     fname = os.path.join(save_dir, 'modelsummary.txt')
     with open(fname, 'w') as f:
@@ -63,63 +107,19 @@ def main():
     index = int(0.8*len(data))
     print("Number of training examples: {}".format(index))
     print("Number of validation examples: {}".format(len(data) - index))
-    train = data[:index, :]
-    np.random.shuffle(train)
-    trainParton = train[:, :4]
-    trainPf = train[:, 4:]
+    trainData = data[:index, :]
+    np.random.shuffle(trainData)
+    trainParton = trainData[:, :4]
+    trainPf = trainData[:, 4:]
     train_dataset = tf.data.Dataset.from_tensor_slices((trainParton,
             trainPf))
-    train_dataset.batch(BATCH_SIZE)
+    train_dataset = train_dataset.batch(BATCH_SIZE)
     validate = data[index:, :]
     validateParton = validate[:, :4]
     validatePf = validate[:, 4:]
 
-
-
-    cross_entropy = tf.keras.losses.BinaryCrossentropy()
-
-    def discriminator_loss(real_output, fake_output):
-        real_loss = cross_entropy(tf.ones_like(real_output), real_output)
-        fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
-        total_loss = real_loss + fake_loss
-        return total_loss
-
-    def generator_loss(fake_output):
-        return cross_entropy(tf.ones_like(fake_output), fake_output)
-
-    def train_step(pJets, rJets):
-        noise = tf.random.normal([BATCH_SIZE, 4], 0, 1, tf.float32)
-
-        with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            generated_rJets = gen([pJets, noise], training=True)
-
-            real_output = disc([pJets, generated_rJets], training=True)
-            fake_output = disc([pJets, rJets], training=True)
-
-            gen_loss = generator_loss(fake_output)
-            disc_loss = discriminator_loss(real_output, fake_output)
-
-        gen_grads = gen_tape.gradient(gen_loss, gen.trainable_variables)
-        disc_grads = disc_tape.gradient(disc_loss, disc.trainable_variables)
-
-        gen_optimizer.apply_gradients(zip(gen_grads,
-            gen.trainable_variables))
-        disc_optimizer.apply_gradiets(zip(disc_grads,
-            disc.trainable_variables))
-
-    def train(dataset, epochs):
-        for epoch in range(epochs):
-            start = time.time()
-
-            for jet_batch in dataset:
-                train_step(jet_batch[0], jet_batch[1])
-
-        print('Time for epoch {} is {}'.format(epoch+1, time.time() - start))
-
+    
     train(train_dataset, 10)
-
-            
-
 
 if __name__ == "__main__":
     main()
