@@ -178,19 +178,21 @@ int main(int argc, char const *argv[]) {
         float partonETot = 0;
         std::vector<PseudoJet> particles;
         for (int j=0; j < numPartons; j++) {
-            particles.push_back(PseudoJet((*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
-            partonPxTot += (*partonPx)[j];
-            partonPyTot += (*partonPy)[j];
-            partonPzTot += (*partonPz)[j];
-            partonETot += (*partonE)[j];
-            partonPtHist->Fill((*partonPt)[j]);
-            write_out_particles << i << " "
-                << (*partonStatus)[j] << " "
-                << (*partonPdgId)[j] << " "
-                << (*partonPt)[j] << " "
-                << (*partonEta)[j] << " "
-                << (*partonPhi)[j] << " "
-                << (*partonE)[j] << std::endl; 
+            if ((*partonStatus)[j] == 71) {
+                particles.push_back(PseudoJet((*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
+                partonPxTot += (*partonPx)[j];
+                partonPyTot += (*partonPy)[j];
+                partonPzTot += (*partonPz)[j];
+                partonETot += (*partonE)[j];
+                partonPtHist->Fill((*partonPt)[j]);
+                write_out_particles << i << " "
+                    << (*partonStatus)[j] << " "
+                    << (*partonPdgId)[j] << " "
+                    << (*partonPt)[j] << " "
+                    << (*partonEta)[j] << " "
+                    << (*partonPhi)[j] << " "
+                    << (*partonE)[j] << std::endl; 
+            }
         }
 
         std::cout << "Parton Px Tot: " << partonPxTot << std::endl;
