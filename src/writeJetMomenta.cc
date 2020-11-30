@@ -29,6 +29,7 @@ int main(int arc, char const *argv[]) {
     std::vector<Float_t>* partonPy = 0;
     std::vector<Float_t>* partonPz = 0;
     std::vector<Float_t>* partonE = 0;
+    std::vector<Int_t>* partonStatus = 0;
 
     std::vector<Float_t>* genJetPt = 0;
     std::vector<Float_t>* genJetEta = 0;
@@ -56,6 +57,7 @@ int main(int arc, char const *argv[]) {
     tree->SetBranchAddress("partonPy", &partonPy);
     tree->SetBranchAddress("partonPz", &partonPz);
     tree->SetBranchAddress("partonE", &partonE);
+    tree->SetBranchAddress("partonStatus", &partonStatus);
     //tree->SetBranchAddress("partonPdgId", &partonPdgId);
 
     int numEvents = tree->GetEntries();
@@ -66,8 +68,10 @@ int main(int arc, char const *argv[]) {
         int numPartons = partonPx->size();
         std::vector<PseudoJet> partons;
         for (int j=0; j < numPartons; j++) {
-            partons.push_back(PseudoJet( (*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
-            partons[j].set_user_index(j);
+            //if ((*partonStatus)[j] == 71) {
+                partons.push_back(PseudoJet( (*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
+                partons[j].set_user_index(j);
+            //}
         }
 
         double R = 0.4;
@@ -112,10 +116,10 @@ int main(int arc, char const *argv[]) {
                             << partonJets[j].rap() << " " 
                             << partonJets[j].phi_std() << " " 
                             << partonJets[j].e() << " " 
-                            << (*genJetPt)[genJetIndex] << " "
-                            << (*genJetEta)[genJetIndex] << " " 
-                            << (*genJetPhi)[genJetIndex] << " "
-                            << (*genJetE)[genJetIndex] << " " 
+                            //<< (*genJetPt)[genJetIndex] << " "
+                            //<< (*genJetEta)[genJetIndex] << " " 
+                            //<< (*genJetPhi)[genJetIndex] << " "
+                            //<< (*genJetE)[genJetIndex] << " " 
                             << (*pfJetPt)[pfJetIndex] << " "
                             << (*pfJetEta)[pfJetIndex] << " " 
                             << (*pfJetPhi)[pfJetIndex] << " "
