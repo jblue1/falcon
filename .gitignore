@@ -3,6 +3,7 @@
 *.txt
 models/
 *.png
+*.pdf
 
 # executables
 *.out
