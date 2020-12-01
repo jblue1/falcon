@@ -1,16 +1,23 @@
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
+from tensorflow.keras.constraints import max_norm
+
+
+class weight_clipping(tf.keras.constraints.Constraint):
+    def __init__(self, ref_value):
+        self.ref_value = ref_value
+
 
 
 class cWGAN():
     def __init__(self, dataset, num_batches):
         # hyper parameters recommended by paper
-        self.num_critic_iters = 25
+        self.num_critic_iters = 5
         self.clip_value = 0.01
         self.critic_optimizer = tf.keras.optimizers.RMSprop(lr=5e-5)
         self.generator_optimizer = tf.keras.optimizers.RMSprop(lr=5e-5)
-        self.batch_size = 128 
+        self.batch_size = 64 
 
         self.generator = self.build_generator()
         self.critic = self.build_critic()
@@ -80,29 +87,16 @@ class cWGAN():
         #print("Gen Loss: {}".format(loss.numpy()))
         return loss
 
-
-    def rand_data_batch(self):
-        count = 0
-        #pJets = None
-        #rJets = None
-        batches = self.dataset.take(1)
-        # TODO: make this less hacky
-        for batch in batches:
-            pass
-        return batch[0], batch[1]
-
          
     def clip_critic_weights(self):
         for l in self.critic.layers:
-            weights = l.weights
-            weights = [tf.clip_by_value(w, -self.clip_value, self.clip_value) for w in
-                    weights]
+            weights = l.get_weights()
+            weights = [np.clip(w, -self.clip_value, self.clip_value) for w in weights]
             l.set_weights(weights)
 
 
     #@tf.function()
     def train_critic(self, pJets, rJets):
-        #pJets, rJets = self.rand_data_batch()
         shape = tf.shape(pJets)
         noise = tf.random.uniform(shape, 0, 1, tf.float32)
         with tf.GradientTape(persistent=True) as tape:
@@ -114,6 +108,7 @@ class cWGAN():
 
             critic_loss = self.critic_loss(real_output, fake_output)
 
+        
         critic_grads = tape.gradient(critic_loss,
                 self.critic.trainable_variables)
 
@@ -125,7 +120,6 @@ class cWGAN():
 
     #@tf.function()
     def train_generator(self, pJets):
-        #pJets, _ = self.rand_data_batch()
         shape = tf.shape(pJets)
         noise = tf.random.uniform(shape, 0, 1, tf.float32)
 
