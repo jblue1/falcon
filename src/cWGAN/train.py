@@ -33,7 +33,7 @@ def train(model, dataset, epochs, num_data_points, save_dir):
                 print("Loss: {}".format(wass_est))
                 losses.append(wass_est)
                 batches.clear()
-            if count % 700 == 0:
+            if count % ((NUM_CRITIC_ITERS + 2)*100) == 0:
                 print("Completed {} batches".format(count/7))
 
 
