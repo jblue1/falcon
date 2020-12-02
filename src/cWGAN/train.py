@@ -8,18 +8,39 @@ import time
 from contextlib import redirect_stdout
 import os
 
-def train(model, iterations, save_dir):
+NUM_CRITIC_ITERS = 50
+BATCH_SIZE = 64
+NUM_EPOCHS = 10
+
+def train(model, dataset, epochs, num_data_points, save_dir):
+    '''
+    Each training loop requires NUM_CRITIC_ITERS batches of data to train the
+    critic, one batch to train the generator, and then one batch to evaluate
+    one model performance.
+    '''
+    dataset = dataset.shuffle(num_data_points)
+    dataset = dataset.batch(BATCH_SIZE)
     losses = []
     checkpoint_dir = save_dir + '/training_checkpoints'
-    for it in range(iterations):
-        wass_est = model.train_step()
-        print("Loss: {}".format(wass_est))
-        losses.append(wass_est)
+    for epoch in range(epochs):
+        batches = []
+        count = 0
+        for batch in dataset:
+            count += 1
+            batches.append(batch)
+            if count % (NUM_CRITIC_ITERS + 2) == 0:
+                wass_est = model.train_step(batches)
+                print("Loss: {}".format(wass_est))
+                losses.append(wass_est)
+                batches.clear()
+            if count % 700 == 0:
+                print("Completed {} batches".format(count/7))
 
-        if (it + 1) % 100 == 0:
-            gen_filename = os.path.join(checkpoint_dir, 'gen_' + str(it + 1))
-            critic_filename = os.path.join(checkpoint_dir, 'critic_' + str(it +
-                1))
+
+        if (epoch + 1) % 1 == 0:
+            gen_filename = os.path.join(checkpoint_dir, 'gen_' + str(epoch + 1))
+            critic_filename = os.path.join(checkpoint_dir, 'critic_' +
+                    str(epoch + 1))
             print(gen_filename)
             model.generator.save_weights(gen_filename)
             model.critic.save_weights(critic_filename)
@@ -40,8 +61,6 @@ def main():
     os.makedirs(save_dir)
     assert(os.path.isdir(save_dir))
     
-    
-         
     data = np.loadtxt('../../data/processed/matchedJets.txt', skiprows=2)
     partonPtMax = np.max(data[:, 0], axis=0)
     partonPtMin = np.min(data[:, 0], axis=0)
@@ -63,21 +82,22 @@ def main():
     data[:, 4] = (data[:, 4] - pfPtMin)/pfPtMax
     data[:, 5:7] = (data[:, 5:7] - pfMean)/pfStd
     data[:, 7] = (data[:, 7] - pfEMin)/pfEMax
-    num_batches = int(len(data)/64)
-    print(num_batches)
+    num_data_points = len(data)
     np.random.shuffle(data)
     trainParton = data[:, :4]
     trainPf = data[:, 4:]
-    train_dataset = tf.data.Dataset.from_tensor_slices((trainParton,
+    dataset = tf.data.Dataset.from_tensor_slices((trainParton,
             trainPf))
 
-    cwgan = model.cWGAN(train_dataset, num_batches)
+    cwgan = model.cWGAN(NUM_CRITIC_ITERS, BATCH_SIZE)
     fname = os.path.join(save_dir, 'modelsummary.txt')
     with open(fname, 'w') as f:
         with redirect_stdout(f):
             cwgan.print_network()
 
-    losses = train(cwgan, 5000, save_dir)
+    start = time.time()
+    losses = train(cwgan, dataset, 1, num_data_points, save_dir)
+    print("Time for {} epochs: {}".format(NUM_EPOCHS, time.time() - start))
     filename = save_dir + '/losses.txt'
     loss_df = pd.DataFrame({"Wass Est": pd.Series(losses)})
     loss_df.to_csv(filename, header='None', index='None', sep=' ')
