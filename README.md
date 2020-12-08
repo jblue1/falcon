@@ -31,3 +31,13 @@ There are two programs that analyze data. Make sure the output root file from [h
 
 ### Training
 There are currently three machine learning models that have been used for this project, all located in the ```/falcon/src/``` directory. These models are an FCNN, a conditional GAN, and a conditional Wasserstein GAN (still a work in progress). To train, for example, the cGAN, change the working directory to ```/falcon/src/cGAN/``` and run ```python train.py```. This will create the directry ```/falcon/models/cGAN/Run_DATE_0/``` where the losses and weights will be saved. 
+
+### Putting it all together
+After cloning the repo, importing the root file produced from [here](https://github.com/jblue1/EventGeneration/) and creating the directories as described above, running the code below would cluster the parton jets, match parton and reco jets, and then train a conditional GAN to generate realistic reco jet 4-momenta given a parton jet 4-momentum.
+```bash
+make writeJetMomenta.out
+make data
+cd src/cGAN/
+python train.py
+```
+
