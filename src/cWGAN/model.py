@@ -4,16 +4,6 @@ import numpy as np
 from tensorflow.keras.constraints import max_norm
 
 
-class weight_clipping(tf.keras.constraints.Constraint):
-    '''
-    TODO: implement as way of clipping weights in network
-    '''
-
-    def __init__(self, ref_value):
-        self.ref_value = ref_value
-
-
-
 class cWGAN():
     """
     Class implementing a conditional wasserstein generative adversarial
@@ -22,7 +12,7 @@ class cWGAN():
 
     def __init__(self, num_critic_iters, batch_size, noise_dims=4):
         """
-        Initialize object. 
+        Constructor
         num_critic_iters - number of critic training steps to take 
         for each generator training step
         batch_size - number of training examples in each batch
@@ -81,6 +71,9 @@ class cWGAN():
 
 
     def print_network(self):
+        """
+        Print network summaries
+        """
         self.generator.summary()
         self.critic.summary()
 
@@ -151,7 +144,6 @@ class cWGAN():
         self.critic_optimizer.apply_gradients(zip(critic_grads,
             self.critic.trainable_variables))
 
-
         return critic_loss_val
 
 
@@ -213,10 +205,14 @@ class cWGAN():
 
 class cWGAN_mnist(cWGAN):
     """
-    Subclass of cwgan class to be used with MNIST data.
+    Subclass of cWGAN class to be used with MNIST data.
     """
 
     def build_generator(self): 
+        """
+        Override the build generator method from parent class. Instead returns
+        CNN based generator to use with MNIST data.
+        """
         noise = keras.Input(shape=(self.noise_dims,))
         number_input = keras.Input(shape=(10,))
 
@@ -243,6 +239,11 @@ class cWGAN_mnist(cWGAN):
 
 
     def build_critic(self):
+        """
+        Override the build discriminator method from parent class. Instead returns
+        CNN based discriminator to use with MNIST data.
+        """
+
         number_input = keras.Input(shape=(10,))
         image = keras.Input(shape=(28, 28, 1))
 
