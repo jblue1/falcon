@@ -152,7 +152,8 @@ def print_network(save_dir):
 def load_data():
     """
     Loads and normalizes data 
-    returns - tf.data.Dataset object
+    returns - tf.data.Dataset object. Each batch of the dataset is a tuple of
+    (parton batch, reco batch)
     """
     data = np.loadtxt('../../data/processed/matchedJets.txt', skiprows=2)
     partonPtMax = np.max(data[:, 0], axis=0)
