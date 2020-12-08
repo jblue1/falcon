@@ -1,3 +1,45 @@
+/**
+ * This program clusters partons in dataset into jets, then runs jet matching
+ * between the parton, generated, and reco level jets. It also writes out the
+ * 4-momenta of each particle and jet to a specified location. Finally, it also produces the
+ * following histograms concering the the jets and the matching
+ * 
+ * numMatchesPartonRecoHist - the number of reco jet matches for each parton jet
+ * numMatchesPartonGenHist - the number of gen jet matches for each parton jet
+ * numMatchesGenPartonHist - the number of parton jet matches for each gen jet
+ * numMatchesGenRecoHist - the number of reco jet matches for each gen jet
+ * numMatchesRecoPartonHist - the number of parton jet matches for each reco jet
+ * numMatchesRecoGenHist - the number of gen jet matches for each reco jet
+ * partonPtNoRecoMatchHist - the distribution of transverse momentum for parton
+ * jets that did not have a reco jet match
+ *
+ * recoPtNoPartonMatchHist - the distribution of transverse momentum for reco
+ * jets that did not have a parton jet match
+ *
+ * minDRRecoPartonNoMatchHist - the distribution of the smallest deltaR value
+ * found matcheing reco jets to parton jets when no match (deltaR < 0.35) was
+ * found
+ *
+ * emFractionRecoPartonNoMatchHist - distribution of the fraction of EM energy
+ * in each reco jet with no parton jet match
+ *
+ * emFractionRecoPartonMatchHist - distribution of the fraction of EM energy in
+ * each reco jet with a parton jet match
+ *
+ * partonPtHist - distribution of the transverse momentum of each parton
+ *
+ * recoEtaDistributionPartonMatchHist - distribution of the pseudo-rapidity of
+ * reco jets with a parton jet match
+ *
+ * recoEtaDistributionPtDiscrepencyHist - distriubtion of the pseudo-rapidity
+ * of reco jets with parton jet match, but when the ratio of recoJetPt /
+ * partonJetPt is less than 0.75
+ *
+ * emFractionRecoPartonMatchPtDiscrepency - distribution of the fraction of 
+ * EM energy in each recoJet with a parton jet match when the ratio of
+ * recoJetPt / parotnJetPt is less than 0.75
+ */
+
 #include "fastjet/ClusterSequence.hh"
 #include "TFile.h"
 #include "TTree.h"
@@ -23,7 +65,6 @@ void usage(std::ostream &out, const char *msg) {
     out << "            makeJets.out data histos txt" << std::endl;
     out << "    data        - root file from JetNtuple analyzer to use" << std::endl;
     out << "    histos      - root file to write histograms to" << std::endl;
-//    out << "    txt         - text file to write jet data to" << std::endl;
     exit(1);
 }
 
@@ -39,8 +80,8 @@ int main(int argc, char const *argv[]) {
     std::string histosPath = "./data/plots/" + histosFile;
     std::string txtPath1 = "./data/processed/" + txtFile + "particles.txt";
     std::string txtPath2 = "./data/processed/" + txtFile + "jets.txt";
+    
     // open data file and get trees
-
     TFile f(dataPath.c_str());
     TDirectoryFile* df = (TDirectoryFile*) f.Get("demo");
     TTree* tree = (TTree*) df->Get("eventTree");
@@ -84,9 +125,6 @@ int main(int argc, char const *argv[]) {
 
 
 
-    // file to write data as txt
-    //std::ofstream write_out("./data/txt/" + txtFile);
-    //assert(write_out.is_open());
     std::vector<Float_t>* pfJetPt = 0;
     std::vector<Float_t>* pfJetEta = 0;
     std::vector<Float_t>* pfJetPhi = 0;
@@ -166,8 +204,6 @@ int main(int argc, char const *argv[]) {
 
     // loop through events
     for (int i=0; i < numEvents; i++) {
-        //std::cout << "Event: " << i << std::endl;
-        //std::cout << "=======================================" << std::endl;
         tree->GetEntry(i);
 
         // create vector with all parton 4-momenta
@@ -195,11 +231,6 @@ int main(int argc, char const *argv[]) {
             }
         }
 
-        std::cout << "Parton Px Tot: " << partonPxTot << std::endl;
-        std::cout << "Parton Py Tot: " << partonPyTot << std::endl;
-        std::cout << "Parton Pz Tot: " << partonPzTot << std::endl;
-        std::cout << "Parton E Tot: " << partonETot << std::endl;
-
         int numHadrons = hadronPx->size();
         float hadronPxTot = 0;
         float hadronPyTot = 0;
@@ -220,13 +251,6 @@ int main(int argc, char const *argv[]) {
 
         }
 
-        std::cout << "Hadron Px Tot: " << hadronPxTot << std::endl;
-        std::cout << "Hadron Py Tot: " << hadronPyTot << std::endl;
-        std::cout << "Hadron Pz Tot: " << hadronPzTot << std::endl;
-        std::cout << "Hadron E Tot: " << hadronETot << std::endl;
-
-
-
         // cluster partons into jet with anti-kt algorithm
         double R = 0.4;
         JetDefinition jet_def(antikt_algorithm, R);
@@ -245,11 +269,6 @@ int main(int argc, char const *argv[]) {
                     << partonJets[j].phi_std() << " "
                     << partonJets[j].E() << std::endl;
                 if (partonJets[j].pt() >= 20.0) {
-                    if (i % 1000 == 0) {
-                        std::cout << "Event: " << i << std::endl;
-                        std::cout << "Parton Jet Pt: " << partonJets[j].pt() << std::endl;
-
-                    }
                     numPartonJets++;
 
                     int genJetMatches = 0;
@@ -352,16 +371,6 @@ int main(int argc, char const *argv[]) {
                     if (partonJetMatches == 0) {
                         recoPtNoPartonMatchHist->Fill((*pfJetPt)[j]);
                         minDRRecoPartonNoMatchHist->Fill(minDR);
-                        /*
-                        std::cout << "Event: " << i << " has a reco jet with no parton match." << std::endl;
-                        std::cout << "  Reco Jet Pt: " << (*pfJetPt)[j] << std::endl;
-                        std::cout << "  Reco Jet Eta: " << (*pfJetEta)[j] << std::endl;
-                        std::cout << "  Reco Jet Phi: " << (*pfJetPhi)[j] << std::endl;
-                        std::cout << "  Reco Jet Photon Energy: " << (*pfJetPhotonEnergy)[j] << std::endl;
-                        std::cout << "  Reco Jet Electron Energy: " << (*pfJetElectronEnergy)[j] << std::endl;
-                        std::cout << "  Reco Jet Muon Energy: " << (*pfJetMuonEnergy)[j] << std::endl;
-                        std::cout << "  Reco Jet Energy: " << (*pfJetE)[j] << std::endl;
-                        */
                         float emFraction = ( (*pfJetPhotonEnergy)[j] + (*pfJetElectronEnergy)[j] + (*pfJetMuonEnergy)[j] ) / (*pfJetE)[j];
                         emFractionRecoPartonNoMatchHist->Fill(emFraction);
                     }
