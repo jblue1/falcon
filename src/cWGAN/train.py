@@ -1,3 +1,5 @@
+import os
+#os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 import tensorflow as tf
 from tensorflow import keras
 import pandas as pd
@@ -6,11 +8,10 @@ import model
 from datetime import date
 import time
 from contextlib import redirect_stdout
-import os
 
 NUM_CRITIC_ITERS = 50
 BATCH_SIZE = 64
-NUM_EPOCHS = 10
+NUM_EPOCHS = 900
 
 def train(model, dataset, epochs, num_data_points, save_dir):
     '''
@@ -21,6 +22,7 @@ def train(model, dataset, epochs, num_data_points, save_dir):
     dataset = dataset.shuffle(num_data_points)
     dataset = dataset.batch(BATCH_SIZE)
     losses = []
+    critic_losses = []
     checkpoint_dir = save_dir + '/training_checkpoints'
     for epoch in range(epochs):
         batches = []
@@ -29,15 +31,17 @@ def train(model, dataset, epochs, num_data_points, save_dir):
             count += 1
             batches.append(batch)
             if count % (NUM_CRITIC_ITERS + 2) == 0:
-                wass_est = model.train_step(batches)
+                wass_est, new_critic_losses = model.train_step(batches)
                 print("Loss: {}".format(wass_est))
                 losses.append(wass_est)
+                for loss in new_critic_losses:
+                    critic_losses.append(loss)
                 batches.clear()
             if count % ((NUM_CRITIC_ITERS + 2)*100) == 0:
                 print("Completed {} batches".format(count/(NUM_CRITIC_ITERS+2)))
 
 
-        if (epoch + 1) % 1 == 0:
+        if (epoch + 1) % 10 == 0:
             gen_filename = os.path.join(checkpoint_dir, 'gen_' + str(epoch + 1))
             critic_filename = os.path.join(checkpoint_dir, 'critic_' +
                     str(epoch + 1))
@@ -45,7 +49,7 @@ def train(model, dataset, epochs, num_data_points, save_dir):
             model.generator.save_weights(gen_filename)
             model.critic.save_weights(critic_filename)
 
-    return losses
+    return losses, critic_losses
 
 
 def main():
@@ -96,7 +100,7 @@ def main():
             cwgan.print_network()
 
     start = time.time()
-    losses = train(cwgan, dataset, 1, num_data_points, save_dir)
+    losses = train(cwgan, dataset, NUM_EPOCHS, num_data_points, save_dir)
     print("Time for {} epochs: {}".format(NUM_EPOCHS, time.time() - start))
     filename = save_dir + '/losses.txt'
     loss_df = pd.DataFrame({"Wass Est": pd.Series(losses)})
