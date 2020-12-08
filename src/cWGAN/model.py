@@ -15,7 +15,19 @@ class weight_clipping(tf.keras.constraints.Constraint):
 
 
 class cWGAN():
+    """
+    Class implementing a conditional wasserstein generative adversarial
+    network
+    """
+
     def __init__(self, num_critic_iters, batch_size, noise_dims=4):
+        """
+        Initialize object. 
+        num_critic_iters - number of critic training steps to take 
+        for each generator training step
+        batch_size - number of training examples in each batch
+        noise_dims - dimension of the noise input to the generator
+        """
         # hyper parameters recommended by paper
         self.num_critic_iters = num_critic_iters
         self.clip_value = 0.01
@@ -27,6 +39,7 @@ class cWGAN():
         self.noise_dims = noise_dims
         self.generator = self.build_generator()
         self.critic = self.build_critic()
+
 
     def build_generator(self):
         noise = keras.Input(shape=(self.noise_dims,), name="noiseIn")
@@ -72,27 +85,39 @@ class cWGAN():
         self.critic.summary()
 
 
-    #@tf.function
+    @tf.function
     def critic_loss(self, real_output, fake_output):
-        '''
+        """
         The negative of the estimate of the wasserstein distance (negative
         because we want to perform gradient ascent on the critic)
-        '''
+        real_output - output of discriminator when given parton jets matched
+        with real reco jets
+        fake_output - output of discriminator when given parton jets and reco
+        jets from the generator
+        returns - wasserstein loss
+        """
         loss = -(tf.math.reduce_mean(real_output) -
                 tf.math.reduce_mean(fake_output))
-        #print("Critic loss: {}".format(loss))
         return loss
 
 
-    #@tf.function
+    @tf.function
     def generator_loss(self, fake_output):
+        """
+        Estimate of wasserstein loss for the generator
+        fake_output - output of discriminator when given parton jets and reco
+        jets from the generator
+        returns - wasserstein loss
+        """
+
         loss = -tf.math.reduce_mean(fake_output)
-        #print("Gen Loss: {}".format(loss.numpy()))
         return loss
 
          
-    #@tf.function
     def clip_critic_weights(self):
+        """
+        Clip the weights of the critic to value set by self.clip_value
+        """
         for l in self.critic.layers:
             new_weights = []
             for i in range(len(l.weights)):
@@ -101,8 +126,15 @@ class cWGAN():
             l.set_weights(new_weights)
                 
 
-    #@tf.function
+    @tf.function
     def train_critic(self, pJets, rJets):
+        """
+        Train critic on one batch of data
+        pJets - batch of parton jet 4-momenta
+        rJets - batch of maching reco jet 4-momenta
+        returns - the critic loss for the batch
+        """
+
         noise = tf.random.uniform((tf.shape(pJets)[0], self.noise_dims), 0, 1, tf.float32)
         with tf.GradientTape(persistent=True) as tape:
             generated_rJets = self.generator([pJets, noise],
@@ -113,20 +145,23 @@ class cWGAN():
 
             critic_loss_val = self.critic_loss(real_output, fake_output)
         
-        #print("    Critic Loss: {}".format(critic_loss))
         critic_grads = tape.gradient(critic_loss_val,
                 self.critic.trainable_variables)
 
         self.critic_optimizer.apply_gradients(zip(critic_grads,
             self.critic.trainable_variables))
 
-        self.clip_critic_weights()
 
         return critic_loss_val
 
 
-    #@tf.function
+    @tf.function
     def train_generator(self, pJets):
+        """
+        Train generator on one batch of data
+        pJets - batch of parton jet 4-momenta
+        """
+
         noise = tf.random.uniform((tf.shape(pJets)[0], self.noise_dims), 0, 1, tf.float32)
 
         with tf.GradientTape() as tape:
@@ -140,14 +175,25 @@ class cWGAN():
             self.generator.trainable_variables))
 
 
-    #@tf.function
     def train_step(self, data):
+        """
+        One training step for the generator, which involves
+        self.num_critic_iter steps for the critic. Also calculates the
+        estimated wasserstein distance on another batch after training
+        generator.
+        data - a list of data batches, which should have
+        self.num_critic_iters+2 elements.
+        returns - wasserstein estimate on new batch after training critic and
+        generator
+        returns - a list of critic losses with self.num_critic_iters elements
+        """
         count = 0
         wass_estimate = 0.0
         critic_losses = []
         for batch in data:
             if count < self.num_critic_iters:
                 critic_loss_val = self.train_critic(batch[0], batch[1])
+                self.clip_critic_weights()
                 critic_losses.append(critic_loss_val)
             if count == self.num_critic_iters:
                 self.train_generator(batch[0])
@@ -166,6 +212,9 @@ class cWGAN():
 
 
 class cWGAN_mnist(cWGAN):
+    """
+    Subclass of cwgan class to be used with MNIST data.
+    """
 
     def build_generator(self): 
         noise = keras.Input(shape=(self.noise_dims,))
@@ -190,21 +239,22 @@ class cWGAN_mnist(cWGAN):
         out = keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2),
                 padding='same', use_bias=False, activation='tanh')(out)
 
-        
         return keras.Model([number_input, noise], out)
+
 
     def build_critic(self):
         number_input = keras.Input(shape=(10,))
         image = keras.Input(shape=(28, 28, 1))
 
         x = keras.layers.Dense(10, activation='relu')(number_input)
+        x = keras.layers.Dense(100, activation='relu')(x)
 
-        y = keras.layers.Conv2D(64, (5, 5), strides=(2, 2),
+        y = keras.layers.Conv2D(128, (5, 5), strides=(2, 2),
                 padding='same')(image)
         y = keras.layers.LeakyReLU()(y)
         y = keras.layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same')(y)
         y = keras.layers.LeakyReLU()(y)
-        y = keras.layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same')(y)
+        y = keras.layers.Conv2D(256, (5, 5), strides=(2, 2), padding='same')(y)
         y = keras.layers.LeakyReLU()(y)
 
         y = keras.layers.Flatten()(y)
@@ -216,7 +266,6 @@ class cWGAN_mnist(cWGAN):
         out = keras.layers.Dense(1)(out)
 
         return keras.Model([number_input, image], out)
-
 
 
 def main():
