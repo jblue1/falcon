@@ -11,6 +11,9 @@ import pandas as pd
 
 
 def one_hot_encode(number):
+    """
+    Return 10-d vector of one hot encoded number
+    """
     label = np.zeros(10)
     label[number] = 1
     return label
