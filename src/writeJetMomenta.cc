@@ -1,3 +1,10 @@
+/*
+ * This program makes jets out of partons present in the dataset, runs matching
+ * between the parton and reco level jets, and then writes out the 4-momenta of
+ * the matched jets in a text file
+ */
+
+
 #include "fastjet/ClusterSequence.hh"
 #include "TFile.h"
 #include "TTree.h"
@@ -58,7 +65,6 @@ int main(int arc, char const *argv[]) {
     tree->SetBranchAddress("partonPz", &partonPz);
     tree->SetBranchAddress("partonE", &partonE);
     tree->SetBranchAddress("partonStatus", &partonStatus);
-    //tree->SetBranchAddress("partonPdgId", &partonPdgId);
 
     int numEvents = tree->GetEntries();
 
@@ -68,10 +74,8 @@ int main(int arc, char const *argv[]) {
         int numPartons = partonPx->size();
         std::vector<PseudoJet> partons;
         for (int j=0; j < numPartons; j++) {
-            //if ((*partonStatus)[j] == 71) {
-                partons.push_back(PseudoJet( (*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
-                partons[j].set_user_index(j);
-            //}
+            partons.push_back(PseudoJet( (*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
+            partons[j].set_user_index(j);
         }
 
         double R = 0.4;
@@ -95,47 +99,22 @@ int main(int arc, char const *argv[]) {
                             }
                         }
                     }
-                    std::cout << "min DR = " << minDRPfJet << std::endl;
 
-                    float minDRGenJet = 10.0;
-                    int genJetIndex = 0;
-                    for (size_t k=0; k < genJetPt->size(); k++) {
-                        if ((*genJetPt)[k] > 30) {
-                            float dR = deltaR((*genJetEta)[k], (*genJetPhi)[k], partonJets[j].rap(), 
-                                    partonJets[j].phi_std());
-                            if (dR < minDRGenJet) {
-                                minDRGenJet = dR;
-                                genJetIndex = k;
-                            }
-                        }
-                    }
-
-                    if (minDRPfJet < 0.35 && minDRGenJet < 0.35) {
+                    if (minDRPfJet < 0.35) {
                         write_out 
                             << partonJets[j].pt() << " " 
                             << partonJets[j].rap() << " " 
                             << partonJets[j].phi_std() << " " 
                             << partonJets[j].e() << " " 
-                            //<< (*genJetPt)[genJetIndex] << " "
-                            //<< (*genJetEta)[genJetIndex] << " " 
-                            //<< (*genJetPhi)[genJetIndex] << " "
-                            //<< (*genJetE)[genJetIndex] << " " 
                             << (*pfJetPt)[pfJetIndex] << " "
                             << (*pfJetEta)[pfJetIndex] << " " 
                             << (*pfJetPhi)[pfJetIndex] << " "
                             << (*pfJetE)[pfJetIndex] << std::endl;
-                        //std::cout << "Parton Pt: " << partonJets[j].pt() << std::endl;
-                        //std::cout << "Gen Pt: " << (*genJetPt)[jetIndex] << std::endl;
-                        //std::cout << "Parton Eta: " << partonJets[j].rap() << std::endl;
-                        //std::cout << "Gen Eta: " << (*genJetEta)[jetIndex] << std::endl;
-                        //std::cout << "Parton Phi: " << partonJets[j].phi() << std::endl;
-                        //std::cout << "Gen Phi: " << (*genJetPhi)[jetIndex] << std::endl;
                         }
                     }
                 }
             }
         }
-
 
     write_out.close();
 
