@@ -1,6 +1,5 @@
 # data files
-*.root
-*.txt
+data/
 models/
 *.png
 *.pdf
