@@ -1,5 +1,4 @@
 import os
-#os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 import tensorflow as tf
 from tensorflow import keras
 import pandas as pd
@@ -11,13 +10,19 @@ from contextlib import redirect_stdout
 
 NUM_CRITIC_ITERS = 50
 BATCH_SIZE = 64
-NUM_EPOCHS = 900
+NUM_EPOCHS = 2000
+
 
 def train(model, dataset, epochs, num_data_points, save_dir):
     '''
-    Each training loop requires NUM_CRITIC_ITERS batches of data to train the
+    Train model and save weights every 5 epochs. Each training loop requires NUM_CRITIC_ITERS batches of data to train the
     critic, one batch to train the generator, and then one batch to evaluate
     one model performance.
+    model - cWGAN object
+    dataset - tf.data.Dataset object
+    epochs - numer of epochs to train for
+    num_data_points - number of training examples in the dataset
+    save_dir - location for saving weights
     '''
     dataset = dataset.shuffle(num_data_points)
     dataset = dataset.batch(BATCH_SIZE)
@@ -40,8 +45,7 @@ def train(model, dataset, epochs, num_data_points, save_dir):
             if count % ((NUM_CRITIC_ITERS + 2)*100) == 0:
                 print("Completed {} batches".format(count/(NUM_CRITIC_ITERS+2)))
 
-
-        if (epoch + 1) % 10 == 0:
+        if (epoch + 1) % 20 == 0:
             gen_filename = os.path.join(checkpoint_dir, 'gen_' + str(epoch + 1))
             critic_filename = os.path.join(checkpoint_dir, 'critic_' +
                     str(epoch + 1))
@@ -52,7 +56,11 @@ def train(model, dataset, epochs, num_data_points, save_dir):
     return losses, critic_losses
 
 
-def main():
+def make_save_directory():
+    """
+    Creates directory to save losses and weights for each run
+    returns - path to the directory
+    """
     today = str(date.today())
     run_number = 0
     save_dir = '../../models/cWGAN/Run_' + today + '_' + str(run_number) 
@@ -64,7 +72,15 @@ def main():
     print("SAVE DIR: " + save_dir)
     os.makedirs(save_dir)
     assert(os.path.isdir(save_dir))
-    
+    return save_dir
+
+
+def load_data():
+    """
+    Loads and normalizes data 
+    returns - tf.data.Dataset object
+    returns - number of training examples
+    """
     data = np.loadtxt('../../data/processed/matchedJets.txt', skiprows=2)
     partonPtMax = np.max(data[:, 0], axis=0)
     partonPtMin = np.min(data[:, 0], axis=0)
@@ -92,20 +108,50 @@ def main():
     trainPf = data[:, 4:]
     dataset = tf.data.Dataset.from_tensor_slices((trainParton,
             trainPf))
+    return dataset, num_data_points
 
-    cwgan = model.cWGAN(NUM_CRITIC_ITERS, BATCH_SIZE)
+
+def print_network(save_dir, net):
+    """
+    Print network layers to text file in save directory
+    save_dir - location to save file
+    net - cWGAN object 
+    """
     fname = os.path.join(save_dir, 'modelsummary.txt')
     with open(fname, 'w') as f:
         with redirect_stdout(f):
-            cwgan.print_network()
+            net.print_network()
+
+
+def save_losses(save_dir, generator_losses, critic_losses):
+    """
+    Save losses to text file
+    save_dir - location to save file
+    generator_losses - list of generator losses
+    critic_losses - list of critic losses. Note that this
+    list should be NUM_CRITIC_ITERS times the length of the
+    list of generator losses
+    """
+    critic_filename = save_dir + '/critic_losses.txt'
+    generator_filename = save_dir + '/generator_losses.txt'
+    generator_loss_df = pd.DataFrame({"Wass Est": pd.Series(generator_losses)})
+    critic_loss_df = pd.DataFrame({"Wass Est": pd.Series(critic_losses)})
+    generator_loss_df.to_csv(generator_filename, header='None', index='None', sep=' ')
+    critic_loss_df.to_csv(critic_filename, header='None', index='None', sep=' ')
+
+
+def main():
+    save_dir = make_save_directory()
+    dataset, num_data_points = load_data()
+    
+    cwgan = model.cWGAN(NUM_CRITIC_ITERS, BATCH_SIZE)
+    print_network(save_dir, cwgan)
 
     start = time.time()
-    losses = train(cwgan, dataset, NUM_EPOCHS, num_data_points, save_dir)
+    generator_losses, critic_losses = train(cwgan, dataset, NUM_EPOCHS, num_data_points, save_dir)
     print("Time for {} epochs: {}".format(NUM_EPOCHS, time.time() - start))
-    filename = save_dir + '/losses.txt'
-    loss_df = pd.DataFrame({"Wass Est": pd.Series(losses)})
-    loss_df.to_csv(filename, header='None', index='None', sep=' ')
-
+    save_losses(save_dir, generator_losses, critic_losses)
+    
 
 if __name__ == "__main__":
     main()
