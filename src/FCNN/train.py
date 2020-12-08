@@ -7,27 +7,46 @@ from datetime import date
 from contextlib import redirect_stdout
 import os
 
-def main():
-    print(tf.config.list_physical_devices())
+
+def make_save_directory():
+    """
+    Creates directory to save losses and weights for each run
+    returns - path to the directory
+    """
     today = str(date.today())
     run_number = 0
-    save_dir = '../models/FCNN/Run_' + str(run_number) + '_' + today
+    save_dir = '../../models/FCNN/Run_' + today + '_' + str(run_number) 
     
     while (os.path.exists(save_dir)):
         run_number += 1
-        save_dir = '../models/FCNN/Run_' + str(run_number)  + '_' + today
+        save_dir = '../../models/FCNN/Run_' + today + '_' + str(run_number) 
 
     print("SAVE DIR: " + save_dir)
     os.makedirs(save_dir)
     assert(os.path.isdir(save_dir))
-    
-    net = model.make_model()
+    return save_dir
+
+
+def print_network(save_dir, net):
+    """
+    Print network layers to text file in save directory
+    save_dir - location to save file
+    model - keras model 
+    """
     fname = os.path.join(save_dir, 'modelsummary.txt')
     with open(fname, 'w') as f:
         with redirect_stdout(f):
             net.summary()
 
-    data = np.loadtxt('../data/txt/matchttbarDataTot.txt', skiprows=2)
+
+def load_data():
+    """
+    Loads and normalizes data
+    returns - tf.data.Dataset objects in the following order 
+    training parton data, training reco data, validation parton data,
+    validation reco data
+    """
+    data = np.loadtxt('../../data/txt/matchttbarDataTot.txt', skiprows=2)
     partonPtMax = np.max(data[:, 0], axis=0)
     partonPtMin = np.min(data[:, 0], axis=0)
     partonMean = np.mean(data[:, 1:3], axis=0)
@@ -48,11 +67,6 @@ def main():
     data[:, 4] = (data[:, 4] - pfPtMin)/pfPtMax
     data[:, 5:7] = (data[:, 5:7] - pfMean)/pfStd
     data[:, 7] = (data[:, 7] - pfEMin)/pfEMax
-    '''
-    mean = np.mean(data, axis=0)
-    std = np.std(data, axis=0)
-    data = (data - mean)/std
-    '''
     index = int(0.8*len(data))
     print("Number of training examples: {}".format(index))
     print("Number of validation examples: {}".format(len(data) - index))
@@ -62,7 +76,18 @@ def main():
     validate = data[index:, :]
     validateParton = validate[:, :4]
     validatePf = validate[:, 4:]
-    
+    return trainParton, trainPf, validateParton, validatePf
+
+
+def train(net, trainParton, trainPf, validateParton, validatePf, save_dir):
+    """
+    Trains network, saves losses as well as weights every 5 epochs
+    net - keras model
+    trainParton - parton 4-momenta for training
+    trainPf - reco 4-momenta for training
+    validateParton - parton 4-momenta for validation
+    validatePf - reco 4-momenta for validation
+    """
     checkpoint_path = os.path.join(save_dir, 'training/cp.cpkt')
     checkpoint_dir = os.path.dirname(checkpoint_path)
 
@@ -89,6 +114,17 @@ def main():
     fname = os.path.join(save_dir, 'losses.csv')
     loss_df.to_csv(fname)
 
+
+def main():
+    save_dir = make_save_directory()
+    net = model.make_model()
+    print_network(save_dir, net)
+    trainParton, trainPf, validateParton, validatePf = load_data()
+    train(net, trainParton, trainPf, validateParton, validatePf, save_dir)
+
+    
+        
+    
     
 if __name__ == "__main__":
     main()
