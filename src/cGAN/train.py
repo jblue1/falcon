@@ -148,6 +148,7 @@ def print_network(save_dir):
             gen.summary()
             disc.summary()
 
+
 def load_data():
     """
     Loads and normalizes data 
@@ -207,6 +208,7 @@ def main():
     losses = train(train_dataset, 300, save_dir)
     save_losses(save_dir, losses)
     
+
 if __name__ == "__main__":
     main()
 
