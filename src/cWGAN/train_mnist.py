@@ -50,19 +50,6 @@ def print_network(save_dir, net):
 def main():
     
     save_dir = train.make_save_directory()
-    '''
-    today = str(date.today())
-    run_number = 0
-    save_dir = '../../models/cWGAN/Run_MNIST_' + today + '_' + str(run_number) 
-    
-    while (os.path.exists(save_dir)):
-        run_number += 1
-        save_dir = '../../models/cWGAN/Run_MNIST' + today + '_' + str(run_number) 
-
-    print("SAVE DIR: " + save_dir)
-    os.makedirs(save_dir)
-    assert(os.path.isdir(save_dir))
-    '''
 
     dataset, num_data_points = load_data()
     
@@ -75,15 +62,7 @@ def main():
             train.NUM_EPOCHS, num_data_points, save_dir)
     print("Time for {} epochs: {}".format(train.NUM_EPOCHS, time.time() - start))
     train.save_losses(save_dir, generator_losses, critic_losses)
-    '''
-    filename = save_dir + '/losses.txt'
-    critic_filename = save_dir + '/critic_losses.txt'
-    loss_df = pd.DataFrame({"Wass Est": pd.Series(losses)})
-    loss_df.to_csv(filename, header='None', index='None', sep=' ')
-    critic_loss_df = pd.DataFrame({"Critic_loss": pd.Series(critic_losses)})
-    critic_loss_df.to_csv(critic_filename, header='None', index='None', sep=' ')
-    '''
-
+    
 
 if __name__ == '__main__':
     main()
