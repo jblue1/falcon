@@ -78,7 +78,8 @@ def make_save_directory():
 def load_data():
     """
     Loads and normalizes data 
-    returns - tf.data.Dataset object
+    returns - tf.data.Dataset object. Each batch of the dataset is a tuple of
+    (parton batch, reco batch)
     returns - number of training examples
     """
     data = np.loadtxt('../../data/processed/matchedJets.txt', skiprows=2)

@@ -8,12 +8,21 @@ import numpy as np
 import model
 import train
 import pandas as pd
+import sys
 
 
 def one_hot_encode(number):
     """
-    Return 10-d vector of one hot encoded number
+    Return one-hot-encoded vector to serve as a label for MNIST data, for
+    example 
+    one_hot_encode(4)
+    would return
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+    number - digit (must be 0 through 9)
+    returns - one hot encoded vector
     """
+    if (number < 0 or number > 9):
+        sys.exit(1)
     label = np.zeros(10)
     label[number] = 1
     return label
@@ -22,7 +31,8 @@ def one_hot_encode(number):
 def load_data():
     """
     Load and normalize MNIST data
-    returns - tf.data.Dataset object
+    returns - tf.data.Dataset object. Each batch of the dataset is a tuple of
+    (parton batch, reco batch)
     returns - number of training examples
     """
     (train_images, train_labels), (_, _) = keras.datasets.mnist.load_data()
