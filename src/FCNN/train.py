@@ -123,9 +123,6 @@ def main():
     train(net, trainParton, trainPf, validateParton, validatePf, save_dir)
 
     
-        
-    
-    
 if __name__ == "__main__":
     main()
 
