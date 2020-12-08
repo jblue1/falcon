@@ -18,16 +18,40 @@ disc= model.make_discriminator()
 
 
 def discriminator_loss(real_output, fake_output):
+    """
+    Calculate binary crossentropy loss for the descriminator
+    real_output - output from discriminator after being given parton
+                  jets matched with real reco jets
+    fake_output - output from discriminator after being given parton
+                  jets and reco jets from the generator
+    returns - loss for the disciminator
+    """
     real_loss = cross_entropy(tf.ones_like(real_output), real_output)
     fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
     total_loss = real_loss + fake_loss
     return total_loss
 
+
 def generator_loss(fake_output):
+    """
+    Calculate binary crossentropy loss for the generator
+    fake_output - output from discriminator after being given parton
+                  jets and reco jets from the generator
+    returns - loss for the generator
+    """
+
     return cross_entropy(tf.ones_like(fake_output), fake_output)
+
 
 @tf.function
 def train_step(pJets, rJets):
+    """
+    Perform a forward pass and backpropegation for a batch of 
+    data
+    pJets - batch of parton jet 4-momenta for generator to condition on
+    rJets - batch of reco jet 4-moments
+    returns - generator loss and discriminator loss for the step
+    """
     shape = tf.shape(pJets)
     noise = tf.random.normal(shape, 0, 1, tf.float32)
 
@@ -49,30 +73,20 @@ def train_step(pJets, rJets):
     return gen_loss, disc_loss
 
 
-@tf.function
-def val_step(pJets, rJets):
-    shape = tf.shape(pJets)
-    noise = tf.random.normal(shape, 0, 1, tf.float32)
-
-    generated_rJets = gen([pJets, noise], training=False)
-
-    fake_output = disc([pJets, generated_rJets], training=False)
-    real_output = disc([pJets, rJets], training=False)
-
-    gen_loss = generator_loss(fake_output)
-    disc_loss = discriminator_loss(real_output, fake_output)
-
-    return gen_loss, disc_loss
-
-
-#def train(train_dataset, val_pJets, val_rJets, epochs, save_dir):
 def train(train_dataset, epochs, save_dir):
+    """
+    Trains conditional GAN and saves weights every 5 epochs
+    train_dataset - tf.data.Dataset object with parton and reco
+    jet 4-momenta
+    epochs - number of epochs to run for
+    save_dir - location to save weights
+    returns - tuple with a list of generator losses and list of 
+    discriminator losses
+    """
     checkpoint_dir = save_dir + '/training_checkpoints'
     train_gen_loss_list = []
     train_disc_loss_list= []
 
-    #val_gen_loss_list= []
-    #val_disc_loss_list= []
 
     for epoch in range(epochs):
         start = time.time()
@@ -86,16 +100,13 @@ def train(train_dataset, epochs, save_dir):
             train_disc_loss_tot += train_disc_loss
             num_batch += 1
 
-        #val_gen_loss, val_disc_loss = val_step(val_pJets, val_rJets)
 
-        print('Time for epoch {} is {:.2f}. Gen Loss: {:.3f}  Disc Loss: {:.5f}'.format(epoch+1, time.time() - start, train_gen_loss_tot/num_batch, train_disc_loss_tot/num_batch))
-        #print('Val Gen Loss: {:.3f}  Val Disc Loss: {:.3f}'.format(val_gen_loss, val_disc_loss))
+        print('Time for epoch {} is {:.2f}. Gen Loss: {:.3f}  Disc Loss: {:.5f}'.format(epoch+1, 
+            time.time() - start, train_gen_loss_tot/num_batch, train_disc_loss_tot/num_batch))
         print("")
 
         train_gen_loss_list.append(train_gen_loss_tot.numpy()/num_batch)
         train_disc_loss_list.append(train_disc_loss_tot.numpy()/num_batch)
-        #val_gen_loss_list.append(val_gen_loss.numpy())
-        #val_disc_loss_list.append(val_disc_loss.numpy())
 
         if (epoch + 1) % 5 == 0:
             gen_filename = os.path.join(checkpoint_dir, 'gen_' + str(epoch + 1))
@@ -106,11 +117,12 @@ def train(train_dataset, epochs, save_dir):
 
     return (train_gen_loss_list, train_disc_loss_list)
 
-    #return (train_gen_loss_list, train_disc_loss_list, val_gen_loss_list,
-    #        val_disc_loss_list)
 
-
-def main():
+def make_save_directory():
+    """
+    Creates directory to save losses and weights for each run
+    returns - path to the directory
+    """
     today = str(date.today())
     run_number = 0
     save_dir = '../../models/cGAN/Run_' + today + '_' + str(run_number) 
@@ -122,14 +134,25 @@ def main():
     print("SAVE DIR: " + save_dir)
     os.makedirs(save_dir)
     assert(os.path.isdir(save_dir))
-    
-    
+    return save_dir
+
+
+def print_network(save_dir):
+    """
+    Print network layers to text file in save directory
+    save_dir - location to save file
+    """
     fname = os.path.join(save_dir, 'modelsummary.txt')
     with open(fname, 'w') as f:
         with redirect_stdout(f):
             gen.summary()
             disc.summary()
 
+def load_data():
+    """
+    Loads and normalizes data 
+    returns - tf.data.Dataset object
+    """
     data = np.loadtxt('../../data/processed/matchedJets.txt', skiprows=2)
     partonPtMax = np.max(data[:, 0], axis=0)
     partonPtMin = np.min(data[:, 0], axis=0)
@@ -152,32 +175,38 @@ def main():
     data[:, 5:7] = (data[:, 5:7] - pfMean)/pfStd
     data[:, 7] = (data[:, 7] - pfEMin)/pfEMax
 
-    #index = int(0.8*len(data))
-    #print("Number of training examples: {}".format(index))
-    #print("Number of validation examples: {}".format(len(data) - index))
-    #trainData = data[:index, :]
-    #np.random.shuffle(trainData)
     np.random.shuffle(data)
     trainParton = data[:, :4]
     trainPf = data[:, 4:]
     train_dataset = tf.data.Dataset.from_tensor_slices((trainParton,
             trainPf))
     train_dataset = train_dataset.batch(BATCH_SIZE)
-    #validate = data[index:, :]
-    #validateParton = validate[:, :4]
-    #validatePf = validate[:, 4:]
+    return train_dataset
 
-    
-    #losses = train(train_dataset, validateParton, validatePf, 1000, save_dir)
-    losses = train(train_dataset, 300, save_dir)
+
+def save_losses(save_dir, losses):
+    """
+    Save losses to text file
+    save_dir - location to save file
+    losses - tuple with a list of generator losses and list of 
+    discriminator losses
+    """
     loss_df = pd.DataFrame({'Gen Training Loss': pd.Series(losses[0]),
-        'Disc Training Loss': pd.Series(losses[1])})#,
-        #'Gen Validation Loss': pd.Series(losses[2]),
-        #'Disc Validation Loss': pd.Series(losses[3])})
+        'Disc Training Loss': pd.Series(losses[1])})
 
     filename = save_dir + '/losses.txt'
     loss_df.to_csv(filename, header='None', index='None', sep=' ')
 
+
+def main():
+    save_dir = make_save_directory()   
+
+    print_network(save_dir)
+    train_dataset = load_data()
+    
+    losses = train(train_dataset, 300, save_dir)
+    save_losses(save_dir, losses)
+    
 if __name__ == "__main__":
     main()
 
