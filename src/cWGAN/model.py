@@ -72,8 +72,12 @@ class cWGAN():
 
     def print_network(self):
         """
-        Print network summaries
+        Print network summaries and hyper parameters
         """
+        print("Batch Size: {}".format(self.batch_size))
+        print("Num critic iters: {}".format(self.num_critic_iters))
+        print("Clip Value: {}".format(self.clip_value))
+        print("Noise Dimension: {}".format(self.noise_dims))
         self.generator.summary()
         self.critic.summary()
 
