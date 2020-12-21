@@ -9,8 +9,8 @@ import time
 from contextlib import redirect_stdout
 
 NUM_CRITIC_ITERS = 50
-BATCH_SIZE = 64
-NUM_EPOCHS = 2000
+BATCH_SIZE = 256
+NUM_EPOCHS = 16000
 
 
 def train(model, dataset, epochs, num_data_points, save_dir):
