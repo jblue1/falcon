@@ -9,9 +9,9 @@ writeJetMomenta.out : src/writeJetMomenta.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -o bin/writeJetMomenta.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
 
 histos : 
-	./bin/makeHistos.out events.root histos.root momentaInfo
+	./bin/makeHistos.out newPartonEvents.root histos.root momentaInfo
 
 data : 
-	./bin/writeJetMomenta.out events.root matchedJets.txt
+	./bin/writeJetMomenta.out newPartonEvents.root newPartonMatchedJets.txt
 	
 .PHONY: data histos 
