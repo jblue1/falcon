@@ -12,7 +12,7 @@ import os
 BATCH_SIZE=64
 cross_entropy = tf.keras.losses.BinaryCrossentropy()
 gen_optimizer = tf.keras.optimizers.Adam(3e-4)
-disc_optimizer = tf.keras.optimizers.Adam(1e-4)
+disc_optimizer = tf.keras.optimizers.Adam(5e-5)
 gen= model.make_generator()
 disc= model.make_discriminator()
 
@@ -155,7 +155,7 @@ def load_data():
     returns - tf.data.Dataset object. Each batch of the dataset is a tuple of
     (parton batch, reco batch)
     """
-    data = np.loadtxt('../../data/processed/matchedJets.txt', skiprows=2)
+    data = np.loadtxt('../../data/processed/newPartonMatchedJets.txt', skiprows=2)
     partonPtMax = np.max(data[:, 0], axis=0)
     partonPtMin = np.min(data[:, 0], axis=0)
     partonMean = np.mean(data[:, 1:3], axis=0)
@@ -206,7 +206,7 @@ def main():
     print_network(save_dir)
     train_dataset = load_data()
     
-    losses = train(train_dataset, 300, save_dir)
+    losses = train(train_dataset, 600, save_dir)
     save_losses(save_dir, losses)
     
 
