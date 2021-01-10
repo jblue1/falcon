@@ -1,3 +1,7 @@
+import numpy as np
+import tensorflow as tf
+
+
 def load_jet_data(data_path, batch_size):
     """
     Load and normalize the parton data.
