@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
-from tensorflow.keras.constraints import max_norm
+import data_utils
 
 
 class cWGAN:
@@ -172,27 +172,25 @@ class cWGAN_mnist(cWGAN):
         noise = keras.Input(shape=(self.noise_dims,))
         number_input = keras.Input(shape=(10,))
 
-        x = keras.layers.Dense(10, activation="relu")(number_input)
-        x = keras.layers.Dense(32, activation="relu")(x)
+        x = keras.layers.concatenate([noise, number_input])
 
-        y = keras.layers.Dense(self.noise_dims, activation="relu")(noise)
-        y = keras.layers.Dense(self.noise_dims, activation="relu")(y)
+        x = keras.layers.Dense(2*2*1028)(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.ReLU()(x)
 
-        concat = keras.layers.concatenate([x, y])
-        out = keras.layers.Dense(7 * 7 * 256, activation="relu")(concat)
+        x = keras.layers.Reshape((2, 2, 1028))(x)
 
-        out = keras.layers.Reshape((7, 7, 256))(out)
-        out = keras.layers.Conv2DTranspose(
-            128, (5, 5), strides=(1, 1), padding="same", use_bias=False
-        )(out)
-        out = keras.layers.LeakyReLU()(out)
-        out = keras.layers.Conv2DTranspose(
-            64, (5, 5), strides=(2, 2), padding="same", use_bias=False
-        )(out)
-        out = keras.layers.LeakyReLU()(out)
-        out = keras.layers.Conv2DTranspose(
-            1, (5, 5), strides=(2, 2), padding="same", use_bias=False, activation="tanh"
-        )(out)
+        x = keras.layers.Conv2DTranspose(512, 3, 2)(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.ReLU()(x)
+
+        x = keras.layers.Conv2DTranspose(256, 4, 2)(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.ReLU()(x)
+
+        x = keras.layers.Conv2DTranspose(1, 6, 2)(x)
+        x = keras.layers.BatchNormalization()(x)
+        out = keras.layers.ReLU()(x)
 
         return keras.Model([number_input, noise], out)
 
@@ -208,28 +206,34 @@ class cWGAN_mnist(cWGAN):
         x = keras.layers.Dense(10, activation="relu")(number_input)
         x = keras.layers.Dense(100, activation="relu")(x)
 
-        y = keras.layers.Conv2D(128, (5, 5), strides=(2, 2), padding="same")(image)
+        y = keras.layers.Conv2D(64, (5, 5), strides=(2, 2), padding="same")(image)
+        y = keras.layers.LeakyReLU()(y)
+        y = keras.layers.Conv2D(128, (5, 5), strides=(2, 2), padding="same")(y)
         y = keras.layers.LeakyReLU()(y)
         y = keras.layers.Conv2D(128, (5, 5), strides=(2, 2), padding="same")(y)
         y = keras.layers.LeakyReLU()(y)
         y = keras.layers.Conv2D(256, (5, 5), strides=(2, 2), padding="same")(y)
         y = keras.layers.LeakyReLU()(y)
+        y = keras.layers.Conv2D(512, (5, 5), strides=(2, 2), padding="same")(y)
+        y = keras.layers.LeakyReLU()(y)
+        
 
         y = keras.layers.Flatten()(y)
 
         concat = keras.layers.concatenate([x, y])
-        out = keras.layers.Dense(100)(concat)
+        out = keras.layers.Dense(612)(concat)
         out = keras.layers.Dense(100)(out)
         out = keras.layers.Dense(50)(out)
         out = keras.layers.Dense(1)(out)
-
+    
         return keras.Model([number_input, image], out)
 
 
 def main():
 
-    net = cWGAN_mnist(5, 64, 100)
-    net.print_network()
+    net = cWGAN_mnist(0.1, 100)
+    net.generator.summary()
+    net.critic.summary()
 
 
 if __name__ == "__main__":
