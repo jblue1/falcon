@@ -22,3 +22,6 @@ old/
 # mac stuff
 *.DS_Store
 
+# config files
+*cfg.json
+
