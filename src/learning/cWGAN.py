@@ -10,20 +10,16 @@ class cWGAN:
     network
     """
 
-    def __init__(self, num_critic_iters, batch_size, noise_dims=4):
+    def __init__(self, clip_value=0.01, noise_dims=4):
         """
         Constructor
-        num_critic_iters - number of critic training steps to take
-        for each generator training step
-        batch_size - number of training examples in each batch
+        clip_value - value for weight clipping the critic
         noise_dims - dimension of the noise input to the generator
         """
         # hyper parameters recommended by paper
-        self.num_critic_iters = num_critic_iters
-        self.clip_value = 0.01
+        self.clip_value = clip_value
         self.critic_optimizer = tf.keras.optimizers.RMSprop(lr=5e-5)
         self.generator_optimizer = tf.keras.optimizers.RMSprop(lr=5e-5)
-        self.batch_size = batch_size
 
         self.noise_dims = noise_dims
         self.generator = self.build_generator()
@@ -64,17 +60,6 @@ class cWGAN:
         out = keras.layers.Dense(128, activation="relu")(concat)
         out = keras.layers.Dense(1)(out)
         return keras.Model([pJet, rJet], out)
-
-    def print_network(self):
-        """
-        Print network summaries and hyper parameters
-        """
-        print("Batch Size: {}".format(self.batch_size))
-        print("Num critic iters: {}".format(self.num_critic_iters))
-        print("Clip Value: {}".format(self.clip_value))
-        print("Noise Dimension: {}".format(self.noise_dims))
-        self.generator.summary()
-        self.critic.summary()
 
     @tf.function
     def critic_loss(self, real_output, fake_output):
