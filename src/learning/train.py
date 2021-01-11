@@ -54,17 +54,18 @@ class FCNNTrainer:
 
 
 class cWGANTrainer:
-    def __init__(
-        self, data_path, num_critic_iters, batch_size, lr, epochs, save_interval
-    ):
+    def __init__(self, params_dict):
         self.save_dir = file_utils.make_save_directory("cWGAN")
-        self.num_critic_iters = num_critic_iters
-        self.batch_size = batch_size
-        self.model = cWGAN.cWGAN_mnist(num_critic_iters, batch_size)
+        self.num_critic_iters = params_dict["num_critic_iters"]
+        self.batch_size = params_dict["batch_size"]
+        clip_value = params_dict["clip_value"]
+        noise_dims = params_dict["noise_dims"]
+        self.model = cWGAN.cWGAN_mnist(clip_value, noise_dims)
+        
         self.data = data_utils.load_mnist_data()
-        self.epochs = epochs
+        self.epochs = params_dict["epochs"]
         self.num_training_examples = len(self.data[0])
-        self.weight_saving_interval = save_interval
+        self.weight_saving_interval = params_dict["weight_saving_interval"]
 
     def sample_batch_of_data(self):
         indices = np.random.choice(
@@ -138,6 +139,9 @@ class cWGANTrainer:
     def save_model(self):
         file_utils.save_network(self.save_dir, model_path="./cWGAN.py")
 
+    def save_params(self, params_dict):
+        file_utils.save_params(self.save_dir, params_dict)
+
 
 def train_fcnn(params):
     print("Training fcnn")
@@ -158,17 +162,12 @@ def train_cGAN(params):
 
 def train_cWGAN(params):
     print("Training cWGAN")
-    trainer = cWGANTrainer(
-        data_path="../../data/processed/newPartonMatchedJets.txt",
-        num_critic_iters=5,
-        batch_size=64,
-        lr=1e-5,
-        epochs=1,
-        save_interval=2,
-    )
+    params_dict = file_utils.get_cWGAN_hyperparams(params)
+    trainer = cWGANTrainer(params_dict)
     critic_losses, generator_losses, wass_estimates = trainer.train()
     trainer.save_losses(critic_losses, generator_losses, wass_estimates)
     trainer.save_model()
+    trainer.save_params(params_dict)
 
 
 def train(model, params):
