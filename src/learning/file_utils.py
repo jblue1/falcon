@@ -8,18 +8,20 @@ import time
 import sys
 
 
-def make_save_directory(loss_function):
+def make_save_directory(model):
     """
     Creates directory to save losses and weights for each run
     returns - path to the directory
     """
     today = str(date.today())
     run_number = 0
-    save_dir = "/Run_" + loss_function + "_" + str(run_number) + "_" + today
+    models_dir = "../../models/" + model
+    save_dir = models_dir + "/Run_" + str(run_number) + "_" + today
 
     while os.path.exists(save_dir):
         run_number += 1
-        save_dir = "/Run_" + loss_function + "_" + str(run_number) + "_" + today
+        save_dir = models_dir + "/Run_" + str(run_number) + "_" + today
+
 
     print("SAVE DIR: " + save_dir)
     os.makedirs(save_dir)
@@ -49,14 +51,16 @@ def save_params(save_dir, params_dict):
 
 
 
-def save_losses(save_dir, losses_dict):
+def save_losses(save_dir, losses_dict, prefix=""):
     """
-    Save loss curves to a txt
+    Save loss curves to a txt file
     save_dir - location to save file
     losses_dict - dictionary with keys being the name of the
     losses, and the values being a list with the losses
+    prefix - prefix to add to the name of the file
     """
-    fname = os.path.join(save_dir, "losses.txt")
+    name = prefix + "losses.txt"
+    fname = os.path.join(save_dir, name)
     loss_df = pd.DataFrame.from_dict(losses_dict)
     loss_df.to_csv(fname, header="None", index="None", sep=" ")
 
