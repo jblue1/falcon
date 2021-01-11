@@ -88,7 +88,7 @@ class cWGANTrainer:
         batches_per_epoch = self.num_training_examples // self.batch_size
         for epoch in range(self.epochs):
             start = time.time()
-            for batch_number in range(5):  # range(batches_per_epoch):
+            for batch_number in range(batches_per_epoch):
                 # train critic for num_critic_iters
                 for critic_iter in range(self.num_critic_iters):
                     labels, images = self.sample_batch_of_data()
