@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 
-def load_jet_data(data_path, batch_size):
+def load_jet_data(data_path):
     """
     Load and normalize the parton data.
     data_path - path to txt file with jet 4-momenta
