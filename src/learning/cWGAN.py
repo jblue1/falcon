@@ -173,43 +173,6 @@ class cWGAN:
         predictions = self.generator([pJets, noise], training=False)
         return predictions
 
-    def train_step(self, data):
-        """
-        One training step for the generator, which involves
-        self.num_critic_iter steps for the critic. Also calculates the
-        estimated wasserstein distance on another batch after training
-        generator.
-        data - a list of data batches, which should have
-        self.num_critic_iters+2 elements.
-        returns - wasserstein estimate on new batch after training critic and
-        generator
-        returns - a list of critic losses with self.num_critic_iters elements
-        """
-        count = 0
-        wass_estimate = 0.0
-        critic_losses = []
-        for batch in data:
-            if count < self.num_critic_iters:
-                critic_loss_val = self.train_critic(batch[0], batch[1])
-                self.clip_critic_weights()
-                critic_losses.append(critic_loss_val)
-            if count == self.num_critic_iters:
-                self.train_generator(batch[0])
-            if count == self.num_critic_iters + 1:
-                pJets = batch[0]
-                rJets = batch[1]
-                noise = tf.random.uniform(
-                    (tf.shape(pJets)[0], self.noise_dims), 0, 1, tf.float32
-                )
-
-                generated_rJets = self.generator([pJets, noise], training=False)
-                real_output = self.critic([pJets, rJets], training=False)
-                fake_output = self.critic([pJets, generated_rJets], training=False)
-                wass_estimate = -self.critic_loss(real_output, fake_output)
-            count += 1
-
-        return wass_estimate, critic_losses
-
 
 class cWGAN_mnist(cWGAN):
     """
