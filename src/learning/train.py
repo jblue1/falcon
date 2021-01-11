@@ -5,7 +5,8 @@ import FCNN
 import cWGAN
 import tensorflow as tf
 import os
-
+import time
+import numpy as np
 
 
 class FCNNTrainer():
@@ -49,6 +50,44 @@ class FCNNTrainer():
         file_utils.save_network(self.save_dir, model_path="./FCNN.py")
 
 
+class cWGANTrainer():
+    def __init__(self, data_path, num_critic_iters, batch_size, lr, epochs):
+        self.save_dir = file_utils.make_save_directory("cWGAN")
+        self.num_critic_iters = num_critic_iters
+        self.batch_size = batch_size
+        self.model = cWGAN.cWGAN_mnist(num_critic_iters, batch_size)
+        self.data = data_utils.load_mnist_data()
+        self.epochs = epochs
+        self.num_training_examples = len(self.data[0])
+
+
+    def train(self):
+        batches_per_epoch = self.num_training_examples // self.batch_size 
+        for epoch in range(self.epochs):
+            start = time.time()
+
+            for batch_number in range(5): #range(batches_per_epoch):
+
+                # train critic for num_critic_iters
+                for critic_iter in range(self.num_critic_iters):
+                    indices = np.random.choice(np.arange(self.num_training_examples), self.batch_size, replace=False)
+                    labels = self.data[1][indices]
+                    images = self.data[2][indices]
+
+                    critic_loss = self.model.train_critic(labels, images)
+                    self.model.clip_critic_weights()
+                    print("Critic loss {}".format(critic_loss))
+                
+                # train generator
+                indices = np.random.choice(np.arange(self.num_training_examples), self.batch_size, replace=False)
+                labels = self.data[1][indices]
+                self.model.train_generator(labels)
+                
+
+
+
+
+
 def train_fcnn(params):
     print("Training fcnn")
     trainer = FCNNTrainer(lr=1e-4, epochs=1, data_path='../../data/processed/newPartonMatchedJets.txt', batch_size=64)
@@ -63,6 +102,9 @@ def train_cGAN(params):
 
 def train_cWGAN(params):
     print("Training cWGAN")
+    trainer = cWGANTrainer(data_path="../../data/processed/newPartonMatchedJets.txt", num_critic_iters=5,
+    batch_size=64, lr=1e-5, epochs=1)
+    trainer.train()
 
 
 def train(model, params):
