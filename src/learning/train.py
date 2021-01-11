@@ -100,7 +100,9 @@ class cWGANTrainer:
                 predicted_images = self.model.make_generator_predictions(labels)
                 generator_losses.append(generator_loss)
                 real_output = self.model.critic([labels, images], training=False)
-                fake_output = self.model.critic([labels, predicted_images], training=False)
+                fake_output = self.model.critic(
+                    [labels, predicted_images], training=False
+                )
                 wass_estimate = -self.model.critic_loss(real_output, fake_output)
                 wass_estimates.append(wass_estimate)
                 iteration = epoch * batches_per_epoch + batch_number
@@ -132,7 +134,6 @@ class cWGANTrainer:
             "Wasserstein Estimates": wass_estimates,
         }
         file_utils.save_losses(self.save_dir, generator_loss_dict, "generator_")
-
 
     def save_model(self):
         file_utils.save_network(self.save_dir, model_path="./cWGAN.py")

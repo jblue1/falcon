@@ -22,7 +22,6 @@ def make_save_directory(model):
         run_number += 1
         save_dir = models_dir + "/Run_" + str(run_number) + "_" + today
 
-
     print("SAVE DIR: " + save_dir)
     os.makedirs(save_dir)
     assert os.path.isdir(save_dir)
@@ -50,7 +49,6 @@ def save_params(save_dir, params_dict):
         json.dump(params_dict, f, indent=4)
 
 
-
 def save_losses(save_dir, losses_dict, prefix=""):
     """
     Save loss curves to a txt file
@@ -65,14 +63,9 @@ def save_losses(save_dir, losses_dict, prefix=""):
     loss_df.to_csv(fname, header="None", index="None", sep=" ")
 
 
-
 def main():
     pass
 
 
 if __name__ == "__main__":
     main()
-
-
-    
-
