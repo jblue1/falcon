@@ -10,7 +10,7 @@ class cWGAN:
     network
     """
 
-    def __init__(self, clip_value=0.01, noise_dims=4):
+    def __init__(self, clip_value, noise_dims):
         """
         Constructor
         clip_value - value for weight clipping the critic
