@@ -7,6 +7,7 @@ models/
 # executables
 *.out
 *pycache*
+*.pyc
 
 #notebook checkpoints
 *.ipynb_checkpoints
@@ -17,4 +18,7 @@ old/
 
 # vscode
 *.vscode
+
+# mac stuff
+*.DS_Store
 
