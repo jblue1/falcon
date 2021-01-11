@@ -63,8 +63,17 @@ def save_losses(save_dir, losses_dict, prefix=""):
     loss_df.to_csv(fname, header="None", index="None", sep=" ")
 
 
+def get_cWGAN_hyperparams(params_file_path):
+    with open(params_file_path, 'r') as f:
+        params_dict = json.load(f)
+    if "cWGAN" in params_dict.keys():
+        return params_dict["cWGAN"]
+    else:
+        return params_dict
+
+
 def main():
-    pass
+    parse_cWGAN_hyperparams("cfg.json")
 
 
 if __name__ == "__main__":
