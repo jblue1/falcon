@@ -131,7 +131,6 @@ class cWGAN():
         rJets - batch of maching reco jet 4-momenta
         returns - the critic loss for the batch
         """
-
         noise = tf.random.uniform((tf.shape(pJets)[0], self.noise_dims), 0, 1, tf.float32)
         with tf.GradientTape(persistent=True) as tape:
             generated_rJets = self.generator([pJets, noise],
@@ -169,6 +168,18 @@ class cWGAN():
                 self.generator.trainable_variables)
         self.generator_optimizer.apply_gradients(zip(generator_grads,
             self.generator.trainable_variables))
+
+        return generator_loss_val
+
+
+    @tf.function
+    def make_generator_predictions(self, pJets):
+        """
+        """
+        noise = tf.random.uniform((tf.shape(pJets)[0], self.noise_dims), 0, 1, tf.float32)
+        predictions = self.generator([pJets, noise], training=False)
+        return predictions
+
 
 
     def train_step(self, data):
