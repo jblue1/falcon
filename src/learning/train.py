@@ -98,22 +98,22 @@ class cWGANTrainer:
                 # train generator
                 labels, images = self.sample_batch_of_data()
                 generator_loss = self.model.train_generator(labels)
-                predicted_images = self.model.make_generator_predictions(labels)
-                generator_losses.append(generator_loss)
-                real_output = self.model.critic([labels, images], training=False)
-                fake_output = self.model.critic(
-                    [labels, predicted_images], training=False
-                )
-                wass_estimate = -self.model.critic_loss(real_output, fake_output)
-                wass_estimates.append(wass_estimate)
+                #predicted_images = self.model.make_generator_predictions(labels)
+                #generator_losses.append(generator_loss)
+                #real_output = self.model.critic([labels, images], training=False)
+                #fake_output = self.model.critic(
+                #    [labels, predicted_images], training=False
+                #)
+                #wass_estimate = -self.model.critic_loss(real_output, fake_output)
+                #wass_estimates.append(wass_estimate)
                 iteration = epoch * batches_per_epoch + batch_number
                 if iteration % self.weight_saving_interval == 0:
                     self.save_weights(iteration)
-                print(
-                    "Iteration: {}  Wasserstein Estimate: {}".format(
-                        iteration, wass_estimate
-                    )
-                )
+               # print(
+                #    "Iteration: {}  Wasserstein Estimate: {}".format(
+                 #       iteration, wass_estimate
+                  #  )
+                #)
             print("Time for epoch {}: {:1f}s".format(epoch, time.time() - start))
         return critic_losses, generator_losses, wass_estimates
 
@@ -132,7 +132,7 @@ class cWGANTrainer:
         file_utils.save_losses(self.save_dir, critic_loss_dict, "critic_")
         generator_loss_dict = {
             "Generator Loss": generator_losses,
-            "Wasserstein Estimates": wass_estimates,
+            #"Wasserstein Estimates": wass_estimates,
         }
         file_utils.save_losses(self.save_dir, generator_loss_dict, "generator_")
 
