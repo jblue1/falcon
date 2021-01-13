@@ -16,11 +16,11 @@ def make_save_directory(model):
     today = str(date.today())
     run_number = 0
     models_dir = "../../models/" + model
-    save_dir = models_dir + "/Run_" + str(run_number) + "_" + today
+    save_dir = models_dir + "/Run_" + today + "_" + str(run_number)
 
     while os.path.exists(save_dir):
         run_number += 1
-        save_dir = models_dir + "/Run_" + str(run_number) + "_" + today
+        save_dir = models_dir + "/Run_" + today + "_" + str(run_number)
 
     print("SAVE DIR: " + save_dir)
     os.makedirs(save_dir)
@@ -73,8 +73,7 @@ def get_cWGAN_hyperparams(params_file_path):
 
 
 def main():
-    parse_cWGAN_hyperparams("cfg.json")
-
+    pass
 
 if __name__ == "__main__":
     main()
