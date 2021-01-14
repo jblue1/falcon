@@ -130,7 +130,6 @@ class cWGAN:
         Train generator on one batch of data
         pJets - batch of parton jet 4-momenta
         """
-
         noise = tf.random.uniform(
             (tf.shape(pJets)[0], self.noise_dims), 0, 1, tf.float32
         )
@@ -174,22 +173,18 @@ class cWGAN_mnist(cWGAN):
         x = keras.layers.concatenate([noise, number_input])
 
         x = keras.layers.Dense(2*2*1028)(x)
-        x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.ReLU()(x)
+        x = keras.layers.LeakyReLU()(x)
 
         x = keras.layers.Reshape((2, 2, 1028))(x)
 
         x = keras.layers.Conv2DTranspose(512, 3, 2)(x)
-        x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.ReLU()(x)
+        x = keras.layers.LeakyReLU()(x)
 
         x = keras.layers.Conv2DTranspose(256, 4, 2)(x)
-        x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.ReLU()(x)
+        x = keras.layers.LeakyReLU()(x)
 
         x = keras.layers.Conv2DTranspose(1, 6, 2)(x)
-        x = keras.layers.BatchNormalization()(x)
-        out = keras.layers.ReLU()(x)
+        out = keras.layers.LeakyReLU()(x)
 
         return keras.Model([number_input, noise], out)
 
