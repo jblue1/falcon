@@ -170,21 +170,24 @@ class cWGAN_mnist(cWGAN):
         noise = keras.Input(shape=(self.noise_dims,))
         number_input = keras.Input(shape=(10,))
 
-        x = keras.layers.concatenate([noise, number_input])
+        x = keras.layers.Dense(10, activation='relu')(number_input)
+        x = keras.layers.Dense(32, activation='relu')(x)
+        
+        y = keras.layers.Dense(self.noise_dims, activation='relu')(noise)
+        y = keras.layers.Dense(self.noise_dims, activation='relu')(y)
 
-        x = keras.layers.Dense(2*2*1028)(x)
-        x = keras.layers.LeakyReLU()(x)
-
-        x = keras.layers.Reshape((2, 2, 1028))(x)
-
-        x = keras.layers.Conv2DTranspose(512, 3, 2)(x)
-        x = keras.layers.LeakyReLU()(x)
-
-        x = keras.layers.Conv2DTranspose(256, 4, 2)(x)
-        x = keras.layers.LeakyReLU()(x)
-
-        x = keras.layers.Conv2DTranspose(1, 6, 2)(x)
-        out = keras.layers.LeakyReLU()(x)
+        concat = keras.layers.concatenate([x, y])
+        out = keras.layers.Dense(7*7*256, activation='relu')(concat)
+        
+        out = keras.layers.Reshape((7, 7, 256))(out)
+        out = keras.layers.Conv2DTranspose(128, (5, 5), strides=(1, 1),
+                padding='same', use_bias=False)(out)
+        out = keras.layers.LeakyReLU()(out)
+        out = keras.layers.Conv2DTranspose(64, (5, 5), strides=(2, 2),
+                padding='same', use_bias=False)(out)
+        out = keras.layers.LeakyReLU()(out)
+        out = keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2),
+                padding='same', use_bias=False, activation='tanh')(out)
 
         return keras.Model([number_input, noise], out)
 
