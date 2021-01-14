@@ -24,4 +24,5 @@ old/
 
 # config files
 *cfg.json
+*batch.sh
 
