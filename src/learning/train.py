@@ -89,13 +89,12 @@ class cWGANTrainer:
         for epoch in range(self.epochs):
             start = time.time()
             for batch_number in range(batches_per_epoch):
-                if epoch < 4:
-                    # train critic for num_critic_iters
-                    for critic_iter in range(self.num_critic_iters):
-                        labels, images = self.sample_batch_of_data()
-                        critic_loss = self.model.train_critic(labels, images)
-                        critic_losses.append(critic_loss)
-                        self.model.clip_critic_weights()
+                # train critic for num_critic_iters
+                for critic_iter in range(self.num_critic_iters):
+                    labels, images = self.sample_batch_of_data()
+                    critic_loss = self.model.train_critic(labels, images)
+                    critic_losses.append(critic_loss)
+                    self.model.clip_critic_weights()
                 # train generator
                 labels, images = self.sample_batch_of_data()
                 generator_loss = self.model.train_generator(labels)
