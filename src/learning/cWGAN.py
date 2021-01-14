@@ -180,10 +180,10 @@ class cWGAN_mnist(cWGAN):
         out = keras.layers.Dense(7*7*256, activation='relu')(concat)
         
         out = keras.layers.Reshape((7, 7, 256))(out)
-        out = keras.layers.Conv2DTranspose(128, (5, 5), strides=(1, 1),
+        out = keras.layers.Conv2DTranspose(256, (5, 5), strides=(1, 1),
                 padding='same', use_bias=False)(out)
         out = keras.layers.LeakyReLU()(out)
-        out = keras.layers.Conv2DTranspose(64, (5, 5), strides=(2, 2),
+        out = keras.layers.Conv2DTranspose(128, (5, 5), strides=(2, 2),
                 padding='same', use_bias=False)(out)
         out = keras.layers.LeakyReLU()(out)
         out = keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2),
