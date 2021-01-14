@@ -133,7 +133,7 @@ class cWGANTrainer:
         file_utils.save_losses(self.save_dir, critic_loss_dict, "critic_")
         generator_loss_dict = {
             "Generator Loss": generator_losses,
-            #"Wasserstein Estimates": wass_estimates,
+            "Wasserstein Estimates": wass_estimates,
         }
         file_utils.save_losses(self.save_dir, generator_loss_dict, "generator_")
 
