@@ -97,13 +97,13 @@ class cWGANTrainer:
                     self.model.clip_critic_weights()
                 # train generator
                 labels, images = self.sample_batch_of_data()
+                concat_real = data_utils.concatenate_images_labels(images, labels)
                 generator_loss = self.model.train_generator(labels)
                 predicted_images = self.model.make_generator_predictions(labels)
+                concat_fake = data_utils.concatenate_images_labels(predicted_images, labels)
                 generator_losses.append(generator_loss)
-                real_output = self.model.critic([labels, images], training=False)
-                fake_output = self.model.critic(
-                    [labels, predicted_images], training=False
-                )
+                real_output = self.model.critic(concat_real, training=False)
+                fake_output = self.model.critic(concat_fake, training=False)
                 wass_estimate = -self.model.critic_loss(real_output, fake_output)
                 wass_estimates.append(wass_estimate)
                 iteration = epoch * batches_per_epoch + batch_number

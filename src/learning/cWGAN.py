@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
-
+import data_utils
 
 class cWGAN:
     """
@@ -197,33 +197,73 @@ class cWGAN_mnist(cWGAN):
         CNN based discriminator to use with MNIST data.
         """
 
-        number_input = keras.Input(shape=(10,))
-        image = keras.Input(shape=(28, 28, 1))
-
-        x = keras.layers.Dense(10, activation="relu")(number_input)
-        x = keras.layers.Dense(100, activation="relu")(x)
+        image = keras.Input(shape=(28, 28, 11))
 
         y = keras.layers.Conv2D(64, (5, 5), strides=(2, 2), padding="same")(image)
-        y = keras.layers.LeakyReLU()(y)
-        y = keras.layers.Conv2D(128, (5, 5), strides=(2, 2), padding="same")(y)
         y = keras.layers.LeakyReLU()(y)
         y = keras.layers.Conv2D(128, (5, 5), strides=(2, 2), padding="same")(y)
         y = keras.layers.LeakyReLU()(y)
         y = keras.layers.Conv2D(256, (5, 5), strides=(2, 2), padding="same")(y)
         y = keras.layers.LeakyReLU()(y)
         y = keras.layers.Conv2D(512, (5, 5), strides=(2, 2), padding="same")(y)
-        y = keras.layers.LeakyReLU()(y)
-        
+        out = keras.layers.LeakyReLU()(y)
+        out = keras.layers.Conv2D(1, 2, 1)(y)
 
-        y = keras.layers.Flatten()(y)
+        return keras.Model(image, out)
 
-        concat = keras.layers.concatenate([x, y])
-        out = keras.layers.Dense(612)(concat)
-        out = keras.layers.Dense(100)(out)
-        out = keras.layers.Dense(50)(out)
-        out = keras.layers.Dense(1)(out)
+    @tf.function
+    def train_critic(self, labels, images):
+        """
+        Train critic on one batch of data
+        pJets - batch of parton jet 4-momenta
+        rJets - batch of maching reco jet 4-momenta
+        returns - the critic loss for the batch
+        """
+        noise = tf.random.uniform(
+            (tf.shape(labels)[0], self.noise_dims), 0, 1, tf.float32
+        )
+        concat_real = data_utils.concatenate_images_labels(images, labels)
+        with tf.GradientTape(persistent=True) as tape:
+            generated_images = self.generator([labels, noise], training=False)
+            concat_fake = data_utils.concatenate_images_labels(generated_images, labels)
+            real_output = self.critic(concat_real, training=True)
+            fake_output = self.critic(concat_fake, training=True)
+
+            critic_loss_val = self.critic_loss(real_output, fake_output)
+
+        critic_grads = tape.gradient(critic_loss_val, self.critic.trainable_variables)
+
+        self.critic_optimizer.apply_gradients(
+            zip(critic_grads, self.critic.trainable_variables)
+        )
+
+        return critic_loss_val
+
+
+    @tf.function
+    def train_generator(self, labels):
+        """
+        Train generator on one batch of data
+        """
+        noise = tf.random.uniform(
+            (tf.shape(labels)[0], self.noise_dims), 0, 1, tf.float32
+        )
+
+        with tf.GradientTape() as tape:
+            generated_images = self.generator([labels, noise], training=True)
+            concat_fake = data_utils.concatenate_images_labels(generated_images, labels)
+            fake_output = self.critic(concat_fake, training=False)
+            generator_loss_val = self.generator_loss(fake_output)
+
+        generator_grads = tape.gradient(
+            generator_loss_val, self.generator.trainable_variables
+        )
+        self.generator_optimizer.apply_gradients(
+            zip(generator_grads, self.generator.trainable_variables)
+        )
+
+        return generator_loss_val
     
-        return keras.Model([number_input, image], out)
 
 
 def main():
