@@ -3,6 +3,8 @@ from numpy.lib.type_check import imag
 import tensorflow as tf
 import sys
 
+from tensorflow.python.keras.mixed_precision.policy import deserialize
+
 
 def load_jet_data(data_path):
     """
@@ -51,7 +53,7 @@ def one_hot_encode(number):
     if number < 0 or number > 9:
         sys.exit(1)
     label = np.zeros(10)
-    label[number] = 1
+    label[number] = 1.0
     return label
 
 
@@ -66,7 +68,7 @@ def load_mnist_data():
     )
     train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
 
-    one_hot_labels = np.zeros((train_labels.shape[0], 10))
+    one_hot_labels = np.zeros((train_labels.shape[0], 10), dtype=np.float32)
     for i in range(len(train_labels)):
         one_hot_labels[i, :] = one_hot_encode(train_labels[i])
 
@@ -81,16 +83,16 @@ def concatenate_images_labels(images, labels):
     BATCH_SIZEx28x28x1 and the labels are BATCH_SIZE_10x1. The 
     output would be BATCH_SIZE x 28 x 28 x 11. 
     """
-    labels = np.expand_dims(labels, axis=1)
-    labels = np.expand_dims(labels, axis=1)
-    ones = np.ones(images.shape, dtype=np.int8)
+    labels = tf.expand_dims(labels, axis=1)
+    labels = tf.expand_dims(labels, axis=1)
+    ones = tf.ones(images.shape)
     labels_for_concat = labels*ones
-    return np.concatenate((images, labels_for_concat), axis=3)
+    return tf.concat((images, labels_for_concat), axis=3)
 
 
 def test_concatenate_images_labels():
     print("Testing concatenate labels")
-    images = np.array([[
+    images = tf.constant([[
         [
             [2, 3], 
             [4, 5]
@@ -99,16 +101,16 @@ def test_concatenate_images_labels():
             [6, 7], 
             [8, 9]
         ]
-        ]], dtype=np.int8)
+        ]], dtype=tf.int8)
 
-    images = np.reshape(images, (2, 2, 2, 1))
+    images = tf.reshape(images, (2, 2, 2, 1))
 
 
-    labels = np.array([
+    labels = tf.constant([
         [1, 0],
         [0, 1]
-    ], dtype=np.int8)
-    desired_output = np.array([
+    ], dtype=tf.int8)
+    desired_output = tf.constant([
         [[
             [2, 1, 0],
             [3, 1, 0]
@@ -125,13 +127,10 @@ def test_concatenate_images_labels():
             [8, 0, 1],
             [9, 0, 1]
         ]]
-    ], dtype=np.int8)
+    ], dtype=tf.int8)
 
     images_and_labels = concatenate_images_labels(images, labels)
-    if (images_and_labels == desired_output).all():
-        print("    - Test passed")
-    else:
-        print("    - Test failed") 
+    tf.debugging.assert_equal(images_and_labels, desired_output)
 
 
 def main():
