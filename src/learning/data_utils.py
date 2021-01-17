@@ -3,8 +3,6 @@ from numpy.lib.type_check import imag
 import tensorflow as tf
 import sys
 
-from tensorflow.python.keras.mixed_precision.policy import deserialize
-
 
 def load_jet_data(data_path):
     """
