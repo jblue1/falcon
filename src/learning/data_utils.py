@@ -1,5 +1,7 @@
 import numpy as np
+from numpy.lib.type_check import imag
 import tensorflow as tf
+import sys
 
 
 def load_jet_data(data_path):
@@ -69,3 +71,74 @@ def load_mnist_data():
         one_hot_labels[i, :] = one_hot_encode(train_labels[i])
 
     return (train_labels, one_hot_labels, train_images)
+
+
+def concatenate_images_labels(images, labels):
+    """
+    Concatenate labels to images depthwise. 
+    
+    For example, say you training on MNIST,so the images are 
+    BATCH_SIZEx28x28x1 and the labels are BATCH_SIZE_10x1. The 
+    output would be BATCH_SIZE x 28 x 28 x 11. 
+    """
+    labels = np.expand_dims(labels, axis=1)
+    labels = np.expand_dims(labels, axis=1)
+    ones = np.ones(images.shape, dtype=np.int8)
+    labels_for_concat = labels*ones
+    return np.concatenate((images, labels_for_concat), axis=3)
+
+
+def test_concatenate_images_labels():
+    print("Testing concatenate labels")
+    images = np.array([[
+        [
+            [2, 3], 
+            [4, 5]
+        ], 
+        [
+            [6, 7], 
+            [8, 9]
+        ]
+        ]], dtype=np.int8)
+
+    images = np.reshape(images, (2, 2, 2, 1))
+
+
+    labels = np.array([
+        [1, 0],
+        [0, 1]
+    ], dtype=np.int8)
+    desired_output = np.array([
+        [[
+            [2, 1, 0],
+            [3, 1, 0]
+        ],
+        [
+            [4, 1, 0],
+            [5, 1, 0]
+        ]],
+        [[
+            [6, 0, 1],
+            [7, 0, 1]
+        ],
+        [
+            [8, 0, 1],
+            [9, 0, 1]
+        ]]
+    ], dtype=np.int8)
+
+    images_and_labels = concatenate_images_labels(images, labels)
+    if (images_and_labels == desired_output).all():
+        print("    - Test passed")
+    else:
+        print("    - Test failed") 
+
+
+def main():
+    test_concatenate_images_labels()
+
+
+if __name__ == "__main__":
+    main()
+
+
