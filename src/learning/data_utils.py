@@ -70,7 +70,7 @@ def load_mnist_data():
     for i in range(len(train_labels)):
         one_hot_labels[i, :] = one_hot_encode(train_labels[i])
 
-    return (train_labels, one_hot_labels, train_images)
+    return (one_hot_labels, train_images)
 
 
 def concatenate_images_labels(images, labels):
