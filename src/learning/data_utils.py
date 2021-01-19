@@ -75,57 +75,33 @@ def load_mnist_data():
 
 def concatenate_images_labels(images, labels):
     """
-    Concatenate labels to images depthwise. 
-    
-    For example, say you training on MNIST,so the images are 
-    BATCH_SIZEx28x28x1 and the labels are BATCH_SIZE_10x1. The 
-    output would be BATCH_SIZE x 28 x 28 x 11. 
+    Concatenate labels to images depthwise.
+
+    For example, say you training on MNIST,so the images are
+    BATCH_SIZEx28x28x1 and the labels are BATCH_SIZE_10x1. The
+    output would be BATCH_SIZE x 28 x 28 x 11.
     """
     labels = tf.expand_dims(labels, axis=1)
     labels = tf.expand_dims(labels, axis=1)
     ones = tf.ones(images.shape)
-    labels_for_concat = labels*ones
+    labels_for_concat = labels * ones
     return tf.concat((images, labels_for_concat), axis=3)
 
 
 def test_concatenate_images_labels():
     print("Testing concatenate labels")
-    images = tf.constant([[
-        [
-            [2, 3], 
-            [4, 5]
-        ], 
-        [
-            [6, 7], 
-            [8, 9]
-        ]
-        ]], dtype=tf.int8)
+    images = tf.constant([[[[2, 3], [4, 5]], [[6, 7], [8, 9]]]], dtype=tf.int8)
 
     images = tf.reshape(images, (2, 2, 2, 1))
 
-
-    labels = tf.constant([
-        [1, 0],
-        [0, 1]
-    ], dtype=tf.int8)
-    desired_output = tf.constant([
-        [[
-            [2, 1, 0],
-            [3, 1, 0]
-        ],
+    labels = tf.constant([[1, 0], [0, 1]], dtype=tf.int8)
+    desired_output = tf.constant(
         [
-            [4, 1, 0],
-            [5, 1, 0]
-        ]],
-        [[
-            [6, 0, 1],
-            [7, 0, 1]
+            [[[2, 1, 0], [3, 1, 0]], [[4, 1, 0], [5, 1, 0]]],
+            [[[6, 0, 1], [7, 0, 1]], [[8, 0, 1], [9, 0, 1]]],
         ],
-        [
-            [8, 0, 1],
-            [9, 0, 1]
-        ]]
-    ], dtype=tf.int8)
+        dtype=tf.int8,
+    )
 
     images_and_labels = concatenate_images_labels(images, labels)
     tf.debugging.assert_equal(images_and_labels, desired_output)
@@ -137,5 +113,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

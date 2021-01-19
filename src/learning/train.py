@@ -61,7 +61,7 @@ class cWGANTrainer:
         clip_value = params_dict["clip_value"]
         noise_dims = params_dict["noise_dims"]
         self.model = cWGAN.cWGAN_mnist(clip_value, noise_dims)
-        
+
         self.data = data_utils.load_mnist_data()
         self.epochs = params_dict["epochs"]
         self.num_training_examples = len(self.data[0])
@@ -100,7 +100,9 @@ class cWGANTrainer:
                 concat_real = data_utils.concatenate_images_labels(images, labels)
                 generator_loss = self.model.train_generator(labels)
                 predicted_images = self.model.make_generator_predictions(labels)
-                concat_fake = data_utils.concatenate_images_labels(predicted_images, labels)
+                concat_fake = data_utils.concatenate_images_labels(
+                    predicted_images, labels
+                )
                 generator_losses.append(generator_loss)
                 real_output = self.model.critic(concat_real, training=False)
                 fake_output = self.model.critic(concat_fake, training=False)

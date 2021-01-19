@@ -3,6 +3,7 @@ from tensorflow import keras
 import numpy as np
 import data_utils
 
+
 class cWGAN:
     """
     Class implementing a conditional wasserstein generative adversarial
@@ -170,24 +171,27 @@ class cWGAN_mnist(cWGAN):
         noise = keras.Input(shape=(self.noise_dims,))
         number_input = keras.Input(shape=(10,))
 
-        x = keras.layers.Dense(10, activation='relu')(number_input)
-        x = keras.layers.Dense(32, activation='relu')(x)
-        
-        y = keras.layers.Dense(self.noise_dims, activation='relu')(noise)
-        y = keras.layers.Dense(self.noise_dims, activation='relu')(y)
+        x = keras.layers.Dense(10, activation="relu")(number_input)
+        x = keras.layers.Dense(32, activation="relu")(x)
+
+        y = keras.layers.Dense(self.noise_dims, activation="relu")(noise)
+        y = keras.layers.Dense(self.noise_dims, activation="relu")(y)
 
         concat = keras.layers.concatenate([x, y])
-        out = keras.layers.Dense(7*7*256, activation='relu')(concat)
-        
+        out = keras.layers.Dense(7 * 7 * 256, activation="relu")(concat)
+
         out = keras.layers.Reshape((7, 7, 256))(out)
-        out = keras.layers.Conv2DTranspose(256, (5, 5), strides=(1, 1),
-                padding='same', use_bias=False)(out)
+        out = keras.layers.Conv2DTranspose(
+            256, (5, 5), strides=(1, 1), padding="same", use_bias=False
+        )(out)
         out = keras.layers.LeakyReLU()(out)
-        out = keras.layers.Conv2DTranspose(128, (5, 5), strides=(2, 2),
-                padding='same', use_bias=False)(out)
+        out = keras.layers.Conv2DTranspose(
+            128, (5, 5), strides=(2, 2), padding="same", use_bias=False
+        )(out)
         out = keras.layers.LeakyReLU()(out)
-        out = keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2),
-                padding='same', use_bias=False, activation='tanh')(out)
+        out = keras.layers.Conv2DTranspose(
+            1, (5, 5), strides=(2, 2), padding="same", use_bias=False, activation="tanh"
+        )(out)
 
         return keras.Model([number_input, noise], out)
 
@@ -239,7 +243,6 @@ class cWGAN_mnist(cWGAN):
 
         return critic_loss_val
 
-
     @tf.function
     def train_generator(self, labels):
         """
@@ -263,7 +266,6 @@ class cWGAN_mnist(cWGAN):
         )
 
         return generator_loss_val
-    
 
 
 def main():

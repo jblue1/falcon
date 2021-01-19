@@ -64,7 +64,7 @@ def save_losses(save_dir, losses_dict, prefix=""):
 
 
 def get_cWGAN_hyperparams(params_file_path):
-    with open(params_file_path, 'r') as f:
+    with open(params_file_path, "r") as f:
         params_dict = json.load(f)
     if "cWGAN" in params_dict.keys():
         return params_dict["cWGAN"]
@@ -74,6 +74,7 @@ def get_cWGAN_hyperparams(params_file_path):
 
 def main():
     pass
+
 
 if __name__ == "__main__":
     main()
