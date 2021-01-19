@@ -9,49 +9,6 @@ import time
 import numpy as np
 
 
-class FCNNTrainer:
-    def __init__(self, lr, epochs, data_path, batch_size):
-        self.save_dir = file_utils.make_save_directory("FCNN")
-        self.model = FCNN.make_model()
-        self.model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=lr),
-            loss=tf.keras.losses.MeanAbsoluteError(),
-            metrics=[tf.keras.metrics.MeanAbsoluteError()],
-        )
-
-        self.batch_size = batch_size
-        self.parton_data, self.reco_data = data_utils.load_jet_data(data_path)
-        self.checkpoint_path = os.path.join(self.save_dir, "training/cp.cpkt")
-        self.epochs = epochs
-
-    def train(self):
-        cp_callback = tf.keras.callbacks.ModelCheckpoint(
-            filepath=self.checkpoint_path,
-            save_weights_only=True,
-            verbose=1,
-            save_best_only=True,
-        )
-
-        history = self.model.fit(
-            self.parton_data,
-            self.reco_data,
-            batch_size=self.batch_size,
-            epochs=self.epochs,
-            validation_split=0.2,
-            callbacks=[cp_callback],
-        )
-
-        return history
-
-    def save_losses(self, history):
-        training_loss = history.history["loss"]
-        val_loss = history.history["val_loss"]
-        loss_dict = {"Training Loss": training_loss, "Validation Loss": val_loss}
-        file_utils.save_losses(self.save_dir, loss_dict)
-
-    def save_model(self):
-        file_utils.save_network(self.save_dir, model_path="./FCNN.py")
-
 
 class cWGANTrainer:
     def __init__(self, params_dict):
@@ -147,15 +104,12 @@ class cWGANTrainer:
 
 def train_fcnn(params):
     print("Training fcnn")
-    trainer = FCNNTrainer(
-        lr=1e-4,
-        epochs=1,
-        data_path="../../data/processed/newPartonMatchedJets.txt",
-        batch_size=64,
-    )
+    params_dict = file_utils.get_FCNN_hyperparams(params)
+    trainer = FCNN.Trainer(params_dict)
     history = trainer.train()
     trainer.save_losses(history)
     trainer.save_model()
+    trainer.save_params(params_dict)
 
 
 def train_cGAN(params):
