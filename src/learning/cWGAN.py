@@ -40,36 +40,30 @@ class cWGAN:
         noise = keras.Input(shape=(self.noise_dims,), name="noiseIn")
         x_in = keras.Input(shape=(4,), name="pjetIn")
 
-        x = keras.layers.Dense(32, activation="relu", name="genx1")(x_in)
-        x = keras.layers.Dense(64, activation="relu", name="genx2")(x)
-        x = keras.layers.Dense(64, activation="relu", name="genx3")(x)
+        concat = keras.layers.concatenate([x_in, noise], name="concat")
+        z = keras.layers.Dense(512, activation="relu")(concat)
+        z = keras.layers.Dense(512, activation="relu")(z)
+        z = keras.layers.Dense(512, activation="relu")(z)
+        z = keras.layers.Dense(512, activation="relu")(z)
+        z = keras.layers.Dense(512, activation="relu")(z)
+        out = keras.layers.Dense(4, activation="relu")(z)
 
-        z = keras.layers.Dense(32, activation="relu", name="geny1")(noise)
-        z = keras.layers.Dense(64, activation="relu", name="geny2")(z)
-        z = keras.layers.Dense(64, activation="relu", name="geny3")(z)
-
-        concat = keras.layers.concatenate([x, z], name="concat")
-        out = keras.layers.Dense(64, activation="relu", name="both1")(concat)
-        out = keras.layers.Dense(64, activation="relu", name="both2")(concat)
-        out = keras.layers.Dense(4, name="out")(out)
         return keras.Model([x_in, noise], out)
 
     def build_critic(self):
         x_in = keras.Input(shape=(4,))
         y_in = keras.Input(shape=(4,))
+        concat = keras.layers.concatenate([x_in, y_in])
 
-        x = keras.layers.Dense(32, activation="relu")(x_in)
-        x = keras.layers.Dense(64, activation="relu")(x)
-        x = keras.layers.Dense(64, activation="relu")(x)
 
-        y = keras.layers.Dense(32, activation="relu")(y_in)
-        y = keras.layers.Dense(64, activation="relu")(y)
-        y = keras.layers.Dense(64, activation="relu")(y)
 
-        concat = keras.layers.concatenate([x, y])
-        out = keras.layers.Dense(128, activation="relu")(concat)
-        out = keras.layers.Dense(128, activation="relu")(concat)
-        out = keras.layers.Dense(1)(out)
+        z = keras.layers.Dense(512, activation="relu")(concat)
+        z = keras.layers.Dense(512, activation="relu")(z)
+        z = keras.layers.Dense(512, activation="relu")(z)
+        z = keras.layers.Dense(512, activation="relu")(z)
+        z = keras.layers.Dense(512, activation="relu")(z)
+
+        out = keras.layers.Dense(1)(z)
         return keras.Model([x_in, y_in], out)
 
     @tf.function
@@ -447,7 +441,7 @@ class MNISTTrainer(Trainer):
 
 def main():
 
-    net = cWGAN_mnist(0.1, 100)
+    net = cWGAN(0.1, 100)
     net.generator.summary()
     net.critic.summary()
 
