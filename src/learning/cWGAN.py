@@ -218,7 +218,7 @@ class Trainer:
         batches_per_epoch = self.num_training_examples // self.batch_size
         for epoch in range(self.epochs):
             start = time.time()
-            for batch_number in range(5):#range(batches_per_epoch):
+            for batch_number in range(batches_per_epoch):
                 # train critic for num_critic_iters
                 for critic_iter in range(self.num_critic_iters):
                     self.take_critic_step()
