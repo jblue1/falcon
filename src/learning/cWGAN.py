@@ -46,7 +46,7 @@ class cWGAN:
         z = keras.layers.Dense(512, activation="relu")(z)
         z = keras.layers.Dense(512, activation="relu")(z)
         z = keras.layers.Dense(512, activation="relu")(z)
-        out = keras.layers.Dense(4, activation="relu")(z)
+        out = keras.layers.Dense(4)(z)
 
         return keras.Model([x_in, noise], out)
 
@@ -54,8 +54,6 @@ class cWGAN:
         x_in = keras.Input(shape=(4,))
         y_in = keras.Input(shape=(4,))
         concat = keras.layers.concatenate([x_in, y_in])
-
-
 
         z = keras.layers.Dense(512, activation="relu")(concat)
         z = keras.layers.Dense(512, activation="relu")(z)
@@ -185,9 +183,9 @@ class Trainer:
         indices = np.random.choice(
             np.arange(self.num_training_examples), self.batch_size, replace=False
         )
-        labels = self.data[0][indices]
-        images = self.data[1][indices]
-        return labels, images
+        x = self.data[0][indices]
+        y = self.data[1][indices]
+        return x, y
 
     def take_critic_step(self):
         x, y = self.sample_batch_of_data()
