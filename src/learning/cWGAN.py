@@ -55,16 +55,14 @@ class cWGAN:
         y_in = keras.Input(shape=(4,))
         concat = keras.layers.concatenate([x_in, y_in])
 
-        z = keras.layers.Dense(512)(concat)
-        z = keras.layers.LeakyReLU()(z)
-        z = keras.layers.Dense(512)(z)
-        z = keras.layers.LeakyReLU()(z)
-        z = keras.layers.Dense(512)(z)
-        z = keras.layers.LeakyReLU()(z)
-        z = keras.layers.Dense(512)(z)
-        z = keras.layers.LeakyReLU()(z)
-        z = keras.layers.Dense(512)(z)
-        z = keras.layers.LeakyReLU()(z)
+        z = keras.layers.Dense(512, activation="relu")(concat)
+        z = keras.layers.Dense(512, activation="relu")(z)
+        z = keras.layers.Dense(512, activation="relu")(z)
+        z = keras.layers.Dense(1024, activation="relu")(z)
+        z = keras.layers.Dense(1024, activation="relu")(z)
+        z = keras.layers.Dense(512, activation="relu")(z)
+        z = keras.layers.Dense(256, activation="relu")(z)
+        z = keras.layers.Dense(128, activation="relu")(z)
 
         out = keras.layers.Dense(1)(z)
         return keras.Model([x_in, y_in], out)
@@ -444,7 +442,7 @@ class MNISTTrainer(Trainer):
 
 def main():
 
-    net = cWGAN(0.1, 100)
+    net = cWGAN(0.01, 10)
     net.generator.summary()
     net.critic.summary()
 
