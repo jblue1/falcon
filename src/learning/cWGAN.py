@@ -58,11 +58,8 @@ class cWGAN:
         z = keras.layers.Dense(512, activation="relu")(concat)
         z = keras.layers.Dense(512, activation="relu")(z)
         z = keras.layers.Dense(512, activation="relu")(z)
-        z = keras.layers.Dense(1024, activation="relu")(z)
-        z = keras.layers.Dense(1024, activation="relu")(z)
         z = keras.layers.Dense(512, activation="relu")(z)
-        z = keras.layers.Dense(256, activation="relu")(z)
-        z = keras.layers.Dense(128, activation="relu")(z)
+        z = keras.layers.Dense(512, activation="relu")(z)
 
         out = keras.layers.Dense(1)(z)
         return keras.Model([x_in, y_in], out)
