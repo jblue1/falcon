@@ -239,7 +239,6 @@ class Trainer:
         critic_filename = os.path.join(checkpoint_dir, "critic_" + str(iteration))
         print("Saving generator weights at {}".format(gen_filename))
         self.model.generator.save_weights(gen_filename)
-        self.model.critic.save_weights(critic_filename)
 
     def save_losses(self):
         critic_loss_dict = {
