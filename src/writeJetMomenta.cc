@@ -92,8 +92,6 @@ int main(int arc, char const *argv[])
                     int pfJetIndex = 0;
                     for (size_t k = 0; k < pfJetPt->size(); k++)
                     {
-                        if ((*pfJetPt)[k] > 30)
-                        {
                             float dR = deltaR((*pfJetEta)[k], (*pfJetPhi)[k], partonJets[j].rap(),
                                               partonJets[j].phi_std());
                             if (dR < minDRPfJet)
@@ -101,7 +99,6 @@ int main(int arc, char const *argv[])
                                 minDRPfJet = dR;
                                 pfJetIndex = k;
                             }
-                        }
                     }
 
                     if (minDRPfJet < 0.35)
