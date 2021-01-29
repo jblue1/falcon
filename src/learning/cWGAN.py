@@ -21,16 +21,18 @@ class cWGAN:
     network
     """
 
-    def __init__(self, clip_value, noise_dims):
+    def __init__(self, clip_value, noise_dims, gen_lr, critic_lr):
         """
         Constructor
         clip_value - value for weight clipping the critic
         noise_dims - dimension of the noise input to the generator
+        gen_lr - generator learning rate
+        critic_lr - critic learning rate
         """
         # hyper parameters recommended by paper
         self.clip_value = clip_value
-        self.critic_optimizer = tf.keras.optimizers.RMSprop(lr=5e-5)
-        self.generator_optimizer = tf.keras.optimizers.RMSprop(lr=5e-5)
+        self.critic_optimizer = tf.keras.optimizers.RMSprop(lr=critic_lr)
+        self.generator_optimizer = tf.keras.optimizers.RMSprop(lr=gen_lr)
 
         self.noise_dims = noise_dims
         self.generator = self.build_generator()
@@ -166,9 +168,11 @@ class Trainer:
         self.save_dir = file_utils.make_save_directory("cWGAN")
         self.num_critic_iters = params_dict["num_critic_iters"]
         self.batch_size = params_dict["batch_size"]
+        gen_lr = params_dict["gen_lr"]
+        critic_lr = params_dict["critic_lr"]
         clip_value = params_dict["clip_value"]
         noise_dims = params_dict["noise_dims"]
-        self.model = cWGAN(clip_value, noise_dims)
+        self.model = cWGAN(clip_value, noise_dims, gen_lr, critic_lr)
 
         self.data = data_utils.load_jet_data(params_dict["data_path"])
         self.epochs = params_dict["epochs"]
