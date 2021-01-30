@@ -1,7 +1,7 @@
 """
 Classes to implement and train a conditional wasserstein GAN on the parton data
 as well as MNIST data. The cWGAN learns to generate samples y (either reco jet 
-4-momenta or images of handwritten digits), conditioned onsome input x (either 
+4-momenta or images of handwritten digits), conditioned on some input x (either 
 parton jet 4-momenta or a digit 0-9). 
 """
 
