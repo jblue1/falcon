@@ -136,7 +136,7 @@ class Trainer:
         """Constructor
 
         Args:
-            params_dict (dictionary): Dictionary with model hyperparams
+            params_dict (dict): Dictionary with model hyperparams
         """
         self.save_dir = file_utils.make_save_directory("cGAN")
         self.batch_size = params_dict["batch_size"]
@@ -201,6 +201,8 @@ class Trainer:
         self.model.generator.save_weights(gen_filename)
 
     def save_losses(self):
+        """Save losses to txt file
+        """
         loss_dict = {
             "Gen Loss": self.generator_losses,
             "Discriminator Loss": self.discriminator_losses,
@@ -208,9 +210,16 @@ class Trainer:
         file_utils.save_losses(self.save_dir, loss_dict)
 
     def save_model(self):
+        """Copy cGAN.py to save dir, for later model evaluation
+        """
         file_utils.save_network(self.save_dir, model_path="./cGAN.py")
 
     def save_params(self, params_dict):
+        """Save model parameters
+
+        Args:
+            params_dict (dict): Contains training/model parameters
+        """
         file_utils.save_params(self.save_dir, params_dict)
 
 
