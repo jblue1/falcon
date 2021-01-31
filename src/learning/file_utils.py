@@ -71,6 +71,7 @@ def get_cWGAN_hyperparams(params_file_path):
     else:
         return params_dict
 
+
 def get_FCNN_hyperparams(params_file_path):
     with open(params_file_path, "r") as f:
         params_dict = json.load(f)
@@ -78,6 +79,7 @@ def get_FCNN_hyperparams(params_file_path):
         return params_dict["FCNN"]
     else:
         return params_dict
+
 
 def get_cGAN_hyperparams(params_file_path):
     with open(params_file_path, "r") as f:

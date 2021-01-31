@@ -112,9 +112,7 @@ class cWGAN:
         y - batch of matching output data
         returns - the critic loss for the batch
         """
-        noise = tf.random.uniform(
-            (tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32
-        )
+        noise = tf.random.uniform((tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32)
         with tf.GradientTape(persistent=True) as tape:
             predicted_y = self.generator([x, noise], training=False)
             real_output = self.critic([x, y], training=True)
@@ -136,9 +134,7 @@ class cWGAN:
         Train generator on one batch of data
         x - batch of input data
         """
-        noise = tf.random.uniform(
-            (tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32
-        )
+        noise = tf.random.uniform((tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32)
 
         with tf.GradientTape() as tape:
             generated_rJets = self.generator([x, noise], training=True)
@@ -156,9 +152,7 @@ class cWGAN:
 
     @tf.function
     def make_generator_predictions(self, x):
-        noise = tf.random.uniform(
-            (tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32
-        )
+        noise = tf.random.uniform((tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32)
         predictions = self.generator([x, noise], training=False)
         return predictions
 
@@ -209,7 +203,6 @@ class Trainer:
         wass_estimate = -self.model.critic_loss(real_output, fake_output)
         self.wass_estimates.append(wass_estimate)
 
-
     def train(self):
         """
         Training loop for the cWGAN. An "epoch" is considered to be when the generator
@@ -226,7 +219,7 @@ class Trainer:
                     self.take_critic_step()
                 # train generator
                 self.take_generator_step()
-                   
+
                 iteration = epoch * batches_per_epoch + batch_number
                 if iteration % self.weight_saving_interval == 0:
                     self.save_weights(iteration)
@@ -259,6 +252,7 @@ class Trainer:
 
     def save_params(self, params_dict):
         file_utils.save_params(self.save_dir, params_dict)
+
 
 class cWGAN_mnist(cWGAN):
     """
@@ -377,7 +371,9 @@ class MNISTTrainer(Trainer):
         self.batch_size = params_dict["batch_size"]
         clip_value = params_dict["clip_value"]
         noise_dims = params_dict["noise_dims"]
-        self.model = cWGAN_mnist(clip_value, noise_dims)
+        gen_lr = params_dict["gen_lr"]
+        critic_lr = params_dict["critic_lr"]
+        self.model = cWGAN_mnist(clip_value, noise_dims, gen_lr, critic_lr)
 
         self.data = data_utils.load_mnist_data()
         self.epochs = params_dict["epochs"]
@@ -388,7 +384,6 @@ class MNISTTrainer(Trainer):
         self.generator_losses = []
         self.wass_estimates = []
 
-    
     def take_generator_step(self):
         """
         Override function from parent class to handle the image - label
@@ -398,46 +393,12 @@ class MNISTTrainer(Trainer):
         concat_real = data_utils.concatenate_images_labels(images, labels)
         generator_loss = self.model.train_generator(labels)
         predicted_images = self.model.make_generator_predictions(labels)
-        concat_fake = data_utils.concatenate_images_labels(
-            predicted_images, labels
-        )
+        concat_fake = data_utils.concatenate_images_labels(predicted_images, labels)
         self.generator_losses.append(generator_loss)
         real_output = self.model.critic(concat_real, training=False)
         fake_output = self.model.critic(concat_fake, training=False)
         wass_estimate = -self.model.critic_loss(real_output, fake_output)
         self.wass_estimates.append(wass_estimate)
-
-    """
-    def train(self):
-        
-        Training loop for the cWGAN. An "epoch" is considered to be when the generator
-        has seen the same number of examples as are in the data set (note that since the
-        batches are randomly sampled, it won't actually get trained on all the data
-        each epoch).
-        
-        batches_per_epoch = self.num_training_examples // self.batch_size
-        for epoch in range(self.epochs):
-            start = time.time()
-            for batch_number in range(batches_per_epoch):
-                # train critic for num_critic_iters
-                for critic_iter in range(self.num_critic_iters):
-                    labels, images = self.sample_batch_of_data()
-                    critic_loss = self.model.train_critic(labels, images)
-                    self.critic_losses.append(critic_loss)
-                    self.model.clip_critic_weights()
-                # train generator
-                
-                iteration = epoch * batches_per_epoch + batch_number
-                if iteration % self.weight_saving_interval == 0:
-                    self.save_weights(iteration)
-                print(
-                    "Iteration: {}  Wasserstein Estimate: {}".format(
-                        iteration, wass_estimate
-                    )
-                )
-            print("Time for epoch {}: {:1f}s".format(epoch, time.time() - start))
-    """
-
 
 def main():
 
