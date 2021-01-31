@@ -1,4 +1,5 @@
 import sys
+import cGAN
 import file_utils
 import data_utils
 import FCNN
@@ -21,6 +22,12 @@ def train_fcnn(params):
 
 def train_cGAN(params):
     print("Training cGAN")
+    params_dict = file_utils.get_cGAN_hyperparams(params)
+    trainer = cGAN.Trainer(params_dict)
+    trainer.train()
+    trainer.save_losses()
+    trainer.save_model()
+    trainer.save_params(params_dict)
 
 
 def train_cWGAN(params):
