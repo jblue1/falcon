@@ -1,0 +1,14 @@
+{
+    "FCNN": {
+
+    },
+    "cWGAN" : {
+        "data_path" : "../../data/processed/newPartonMatchedJets.txt",
+        "weight_saving_interval" : 5,
+        "num_critic_iters" : 5,
+        "batch_size" : 64,
+        "noise_dims" : 4,
+        "epochs" : 5,
+        "clip_value" : 0.01
+    }
+}

@@ -12,6 +12,6 @@ histos :
 	./bin/makeHistos.out newPartonEvents.root histos.root momentaInfo
 
 data : 
-	./bin/writeJetMomenta.out newPartonEvents.root newPartonMatchedJets.txt
+	./bin/writeJetMomenta.out newPartonEvents.root newPartonMatchedJetsNoRecoPtCut.txt
 	
 .PHONY: data histos 
