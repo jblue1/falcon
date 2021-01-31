@@ -240,7 +240,6 @@ class Trainer:
     def save_weights(self, iteration):
         checkpoint_dir = self.save_dir + "/training_checkpoints"
         gen_filename = os.path.join(checkpoint_dir, "gen_" + str(iteration))
-        critic_filename = os.path.join(checkpoint_dir, "critic_" + str(iteration))
         print("Saving generator weights at {}".format(gen_filename))
         self.model.generator.save_weights(gen_filename)
 

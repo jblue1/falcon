@@ -42,7 +42,7 @@ def save_params(save_dir, params_dict):
     """
     Save the network and training hyper paramters to a json file.
     save_dir - location to save file
-    params_dict - dictonary with the hyperparameters
+    params_dict - dictionary with the hyperparameters
     """
     fname = os.path.join(save_dir, "params.json")
     with open(fname, "w") as f:
@@ -76,6 +76,14 @@ def get_FCNN_hyperparams(params_file_path):
         params_dict = json.load(f)
     if "FCNN" in params_dict.keys():
         return params_dict["FCNN"]
+    else:
+        return params_dict
+
+def get_cGAN_hyperparams(params_file_path):
+    with open(params_file_path, "r") as f:
+        params_dict = json.load(f)
+    if "cGAN" in params_dict.keys():
+        return params_dict["cGAN"]
     else:
         return params_dict
 
