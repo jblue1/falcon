@@ -7,14 +7,12 @@ import time
 import numpy as np
 
 
-
 class cGAN:
     """Class implementing a conditional generative adversarial network described
     here: https://arxiv.org/pdf/1411.1784.pdf. The generator G takes in noise z,
     some conditional data x, and produces an output y. The network tries to learn
     to produce samples from the conditional distribution P(y|x).
     """
-    
 
     def __init__(self, noise_dims, gen_lr, disc_lr):
         """Constructor
@@ -81,12 +79,8 @@ class cGAN:
             tf.Tensor: loss for the discriminator
         """
 
-        real_loss = self.cross_entropy(
-            tf.ones_like(real_output), real_output
-        )
-        fake_loss = self.cross_entropy(
-            tf.zeros_like(fake_output), fake_output
-        )
+        real_loss = self.cross_entropy(tf.ones_like(real_output), real_output)
+        fake_loss = self.cross_entropy(tf.zeros_like(fake_output), fake_output)
         total_loss = real_loss + fake_loss
         return total_loss
 
@@ -99,10 +93,8 @@ class cGAN:
         Returns:
             tf.Tensor: Loss for the generator
         """
-        
-        return self.cross_entropy(
-            tf.ones_like(fake_output), fake_output
-        )
+
+        return self.cross_entropy(tf.ones_like(fake_output), fake_output)
 
     def train_step(self, x, y):
         """One forward pass and backpropagation pass for a batch of data
@@ -115,9 +107,7 @@ class cGAN:
             gen_loss (tf.Tensor): The generator loss for the batch
             disc_loss (tf.Tensor): The discriminator loss for the batch
         """
-        noise = tf.random.uniform(
-            (tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32
-        )
+        noise = tf.random.uniform((tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32)
 
         with tf.GradientTape(persistent=True) as tape:
             generated_y = self.generator([x, noise], training=True)
@@ -131,10 +121,13 @@ class cGAN:
         gen_grads = tape.gradient(gen_loss, self.generator.trainable_variables)
         disc_grads = tape.gradient(disc_loss, self.discriminator.trainable_variables)
 
-        self.gen_optimizer.apply_gradients(zip(gen_grads, self.generator.trainable_variables))
-        self.discriminator_optimizer.apply_gradients(zip(disc_grads,
-            self.discriminator.trainable_variables))
-    
+        self.gen_optimizer.apply_gradients(
+            zip(gen_grads, self.generator.trainable_variables)
+        )
+        self.discriminator_optimizer.apply_gradients(
+            zip(disc_grads, self.discriminator.trainable_variables)
+        )
+
         return gen_loss, disc_loss
 
 
@@ -153,7 +146,7 @@ class Trainer:
         self.model = cGAN(noise_dims, gen_lr, disc_lr)
 
         dataset = data_utils.load_jet_data(params_dict["data_path"])
-        tf_dataset= tf.data.Dataset.from_tensor_slices((dataset[0], dataset[1]))
+        tf_dataset = tf.data.Dataset.from_tensor_slices((dataset[0], dataset[1]))
         self.data = tf_dataset.batch(self.batch_size)
         self.epochs = params_dict["epochs"]
 
@@ -171,19 +164,27 @@ class Trainer:
             num_batches = 0
 
             for batch in self.data:
-                generator_loss, discriminator_loss = self.model.train_step(batch[0], batch[1])
+                generator_loss, discriminator_loss = self.model.train_step(
+                    batch[0], batch[1]
+                )
                 total_generator_loss += generator_loss
                 total_discriminator_loss += discriminator_loss
                 num_batches += 1
-            
+
             avg_generator_loss = total_generator_loss.numpy() / num_batches
             avg_discriminator_loss = total_discriminator_loss.numpy() / num_batches
 
             self.discriminator_losses.append(avg_discriminator_loss)
             self.generator_losses.append(avg_generator_loss)
-            
-            print("Time for epoch {} is {:.2f}. Gen Loss: {:.3f}   Disc Loss {:.3f}".format(epoch,
-            time.time() - start, avg_generator_loss, avg_discriminator_loss))
+
+            print(
+                "Time for epoch {} is {:.2f}. Gen Loss: {:.3f}   Disc Loss {:.3f}".format(
+                    epoch,
+                    time.time() - start,
+                    avg_generator_loss,
+                    avg_discriminator_loss,
+                )
+            )
 
             if epoch % self.weight_saving_interval == 0:
                 self.save_weights(epoch)
@@ -202,10 +203,10 @@ class Trainer:
     def save_losses(self):
         loss_dict = {
             "Gen Loss": self.generator_losses,
-            "Discriminator Loss": self.discriminator_losses
+            "Discriminator Loss": self.discriminator_losses,
         }
         file_utils.save_losses(self.save_dir, loss_dict)
-    
+
     def save_model(self):
         file_utils.save_network(self.save_dir, model_path="./cGAN.py")
 

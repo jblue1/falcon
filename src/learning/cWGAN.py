@@ -400,6 +400,7 @@ class MNISTTrainer(Trainer):
         wass_estimate = -self.model.critic_loss(real_output, fake_output)
         self.wass_estimates.append(wass_estimate)
 
+
 def main():
 
     net = cWGAN(0.01, 10)
