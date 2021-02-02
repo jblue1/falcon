@@ -158,12 +158,16 @@ class cWGAN:
 
     @tf.function
     def train_critic(self, x, y):
+        """Train critic on one batch of data
+
+        Args:
+            x (tf.Tensor): Batch of input data generator is conditioned on
+            y (tf.Tensor): Batch of corresponding real output data
+
+        Returns:
+            tf.Tensor: Critic loss for the batch
         """
-        Train critic on one batch of data
-        x - batch of input data
-        y - batch of matching output data
-        returns - the critic loss for the batch
-        """
+
         noise = tf.random.uniform((tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32)
         with tf.GradientTape(persistent=True) as tape:
             predicted_y = self.generator([x, noise], training=False)
@@ -183,11 +187,16 @@ class cWGAN:
         return critic_loss_val
 
     @tf.function
-    def train_generator(self, x, y):
+    def train_generator(self, x):
+        """Train generator on one batch of data
+
+        Args:
+            x (tf.Tensor): Batch of data generator is conditioned on
+
+        Returns:
+            tf.Tensor: The loss for the batch
         """
-        Train generator on one batch of data
-        x - batch of input data
-        """
+
         noise = tf.random.uniform((tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32)
 
         with tf.GradientTape() as tape:
@@ -286,10 +295,11 @@ class Trainer:
         self.wass_estimates.append(wass_estimate)
 
     def train(self):
-        """Training loop for the cWGAN. An "epoch" is considered to be when the generator
-        has seen the same number of examples as are in the data set (note that since the
-        batches are randomly sampled, it won't actually get trained on all the data
-        each epoch).
+        """Training loop for the cWGAN.
+
+        An "epoch" is considered to be when the generator has seen the same number of
+        examples as are in the data set (note that since the batches are randomly
+        sampled, it won't actually get trained on all the data each epoch).
         """
         batches_per_epoch = self.num_training_examples // self.batch_size
         for epoch in range(self.epochs):
