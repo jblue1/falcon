@@ -72,8 +72,10 @@ class cGAN:
         """Calculate binary crossentropy loss for the discriminator
 
         Args:
-            real_output (tf.Tensor): Output from discriminator after being given parton jets matched with real reco jets
-            fake_output (tf.Tensor): Output from discriminator after being given parton jets matched with reco jets from the
+            real_output (tf.Tensor): Output from discriminator after being given parton 
+            jets matched with real reco jets
+            fake_output (tf.Tensor): Output from discriminator after being given parton 
+            jets matched with reco jets from the generator
 
         Returns:
             tf.Tensor: loss for the discriminator

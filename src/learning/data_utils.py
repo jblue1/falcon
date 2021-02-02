@@ -4,10 +4,13 @@ import sys
 
 
 def load_jet_data(data_path):
-    """
-    Load and normalize the parton data.
-    data_path - path to txt file with jet 4-momenta
-    returns - tuple of numpy arrays (parton_data, reco_data)
+    """Load and normalize the jet data
+
+    Args:
+        data_path (path-like): path to txt file with jet 4-momenta
+
+    Returns:
+        tuple: tuple of ndarrays (parton_data, reco_data)
     """
     data = np.loadtxt(data_path, skiprows=2)
     partonPtMax = np.max(data[:, 0], axis=0)
@@ -38,14 +41,17 @@ def load_jet_data(data_path):
 
 
 def one_hot_encode(number):
-    """
-    Return one-hot-encoded vector to serve as a label for MNIST data, for
-    example
-    one_hot_encode(4)
-    would return
+    """Return a one-hot-encoded vector to serve as a label for MNIST data.
+
+    For example, one_hot_encode(4) would return
+
     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
-    number - digit (must be 0 through 9)
-    returns - one hot encoded vector
+
+    Args:
+        number (int): the digit to encode
+
+    Returns:
+        ndarray: the one-hot-encoded vector
     """
     if number < 0 or number > 9:
         sys.exit(1)
@@ -55,9 +61,10 @@ def one_hot_encode(number):
 
 
 def load_mnist_data():
-    """
-    Load and normalize MNIST data
-    returns - tuple of numpy arrays (labels, images)
+    """Load and normalize MNIST data
+
+    Returns:
+        tuple: tuple of ndarrays (labels, images)
     """
     (train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data()
     train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype(
@@ -73,12 +80,18 @@ def load_mnist_data():
 
 
 def concatenate_images_labels(images, labels):
-    """
-    Concatenate labels to images depthwise.
+    """Concatenate labels to images depthwise
 
-    For example, say you training on MNIST,so the images are
-    BATCH_SIZEx28x28x1 and the labels are BATCH_SIZE_10x1. The
-    output would be BATCH_SIZE x 28 x 28 x 11.
+    For example, say you are training on MNIST, so the images are
+    BATCH_SIZEx28x28x1, and the labels are BATCH_SIZEx10x1. The output would be
+    BATCH_SIZE x 28 x28 x 11
+
+    Args:
+        images (tf.Tensor): Batch of images
+        labels (tf.Tensor): Batch of labels
+
+    Returns:
+        tf.Tensor: Batch with labels concatenated with the images
     """
     labels = tf.expand_dims(labels, axis=1)
     labels = tf.expand_dims(labels, axis=1)
@@ -88,6 +101,7 @@ def concatenate_images_labels(images, labels):
 
 
 def test_concatenate_images_labels():
+    """Test the concatenate_images_labels function with an example thats easy to solve by hand."""
     print("Testing concatenate labels")
     images = tf.constant([[[[2, 3], [4, 5]], [[6, 7], [8, 9]]]], dtype=tf.int8)
 
