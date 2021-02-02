@@ -1,13 +1,8 @@
 import sys
 import cGAN
 import file_utils
-import data_utils
 import FCNN
 import cWGAN
-import tensorflow as tf
-import os
-import time
-import numpy as np
 
 
 def train_fcnn(params):
