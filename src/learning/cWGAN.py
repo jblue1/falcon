@@ -14,6 +14,7 @@ import file_utils
 import time
 import os
 
+
 class cWGAN:
     """Class implementing a conditional wasserstein generative adversarial network"""
 
@@ -152,7 +153,7 @@ class cWGAN:
 
         grads = gp_tape.gradient(pred, y_interpolated)
         norm = tf.sqrt(tf.reduce_sum(tf.square(grads), axis=1))
-        gp = tf.reduce_mean((norm - 1.0)**2)
+        gp = tf.reduce_mean((norm - 1.0) ** 2)
         return gp
 
     @tf.function
@@ -169,7 +170,9 @@ class cWGAN:
             real_output = self.critic([x, y], training=True)
             fake_output = self.critic([x, predicted_y], training=True)
 
-            critic_loss_val = self.critic_loss(real_output, fake_output) + self.gp_weight * self.gradient_penalty(x, y, predicted_y)
+            critic_loss_val = self.critic_loss(
+                real_output, fake_output
+            ) + self.gp_weight * self.gradient_penalty(x, y, predicted_y)
 
         critic_grads = tape.gradient(critic_loss_val, self.critic.trainable_variables)
 
@@ -264,7 +267,7 @@ class Trainer:
         x, y = self.sample_batch_of_data()
         critic_loss = self.model.train_critic(x, y)
         self.critic_losses.append(critic_loss)
-        #self.model.clip_critic_weights()
+        # self.model.clip_critic_weights()
 
     def take_generator_step(self):
         """Sample a batch of data and do one forward pass and backpropagation step

@@ -19,7 +19,6 @@ def make_model():
 
 class Trainer:
     def __init__(self, params_dict):
-    #def __init__(self, lr, epochs, data_path, batch_size):
         self.save_dir = file_utils.make_save_directory("FCNN")
         self.model = make_model()
         self.model.compile(
@@ -29,7 +28,9 @@ class Trainer:
         )
 
         self.batch_size = params_dict["batch_size"]
-        self.parton_data, self.reco_data = data_utils.load_jet_data(params_dict["data_path"])
+        self.parton_data, self.reco_data = data_utils.load_jet_data(
+            params_dict["data_path"]
+        )
         self.checkpoint_path = os.path.join(self.save_dir, "training/cp.cpkt")
         self.epochs = params_dict["epochs"]
 

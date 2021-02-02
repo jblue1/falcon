@@ -72,9 +72,9 @@ class cGAN:
         """Calculate binary crossentropy loss for the discriminator
 
         Args:
-            real_output (tf.Tensor): Output from discriminator after being given parton 
+            real_output (tf.Tensor): Output from discriminator after being given parton
             jets matched with real reco jets
-            fake_output (tf.Tensor): Output from discriminator after being given parton 
+            fake_output (tf.Tensor): Output from discriminator after being given parton
             jets matched with reco jets from the generator
 
         Returns:
@@ -203,8 +203,7 @@ class Trainer:
         self.model.generator.save_weights(gen_filename)
 
     def save_losses(self):
-        """Save losses to txt file
-        """
+        """Save losses to txt file"""
         loss_dict = {
             "Gen Loss": self.generator_losses,
             "Discriminator Loss": self.discriminator_losses,
@@ -212,8 +211,7 @@ class Trainer:
         file_utils.save_losses(self.save_dir, loss_dict)
 
     def save_model(self):
-        """Copy cGAN.py to save dir, for later model evaluation
-        """
+        """Copy cGAN.py to save dir, for later model evaluation"""
         file_utils.save_network(self.save_dir, model_path="./cGAN.py")
 
     def save_params(self, params_dict):
