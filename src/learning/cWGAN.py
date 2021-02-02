@@ -14,11 +14,10 @@ import file_utils
 import time
 import os
 
-
 class cWGAN:
     """Class implementing a conditional wasserstein generative adversarial network"""
 
-    def __init__(self, clip_value, noise_dims, gen_lr, critic_lr):
+    def __init__(self, clip_value, noise_dims, gen_lr, critic_lr, gp_weight):
         """Constructor
 
         Args:
@@ -26,12 +25,14 @@ class cWGAN:
             noise_dims (int): Size of noise vector input to the generator
             gen_lr (float): learning rate of the generator optimizer
             critic_lr (float): learning rate of the critic optimizer
+            gp_weight (float): Weight for the gradient penalty in the loss function
         """
 
         # hyper parameters recommended by paper
         self.clip_value = clip_value
         self.critic_optimizer = tf.keras.optimizers.RMSprop(lr=critic_lr)
         self.generator_optimizer = tf.keras.optimizers.RMSprop(lr=gen_lr)
+        self.gp_weight = gp_weight
 
         self.noise_dims = noise_dims
         self.generator = self.build_generator()
@@ -95,6 +96,7 @@ class cWGAN:
         loss = -tf.math.reduce_mean(fake_output)
         return loss
 
+    @tf.function
     def clip_critic_weights(self):
         """Clip the weights of the critic to the value set by self.clip_value"""
         for l in self.critic.layers:
@@ -104,6 +106,54 @@ class cWGAN:
                     tf.clip_by_value(l.weights[i], -self.clip_value, self.clip_value)
                 )
             l.set_weights(new_weights)
+
+    @tf.function
+    def interpolate_data(self, y_real, y_gen):
+        """Interpolate between data points as described here: https://arxiv.org/pdf/1704.00028.pdf
+
+        The gradient penalty acts on data sampled from straight lines between points in
+        the real distribution P_r and the generated distribution P_g, so for points
+        (x, y_real) ~ P_r and (x, y_gen) ~ P_g, we want (note that x remains unchanged)
+
+        y_new = t*y_gen + (1-t)*y_real
+              = t*(y_gen - y_real) + y_real
+
+        where t is in (0, 1).
+        Args:
+            y_real (tf.Tensor): Batch of data sampled from real distribution
+            y_gen (tf.Tensor): Batch of data sampled from fake distribution
+
+        Returns:
+            tf.Tensor: Interpolated batch of data
+        """
+        batch_size = tf.shape(y_real)[0]
+        t = tf.random.normal([batch_size, 1], 0, 1, tf.float32)
+        diff = y_gen - y_real
+        y_new = t * diff + y_real
+
+        return y_new
+
+    def gradient_penalty(self, x, y_real, y_gen):
+        """Calculate the gradient penalty. See here for explantion: https://arxiv.org/pdf/1704.00028.pdf
+
+        Args:
+            x (tf.Tensor): Batch of data that the distribution is conditioned on
+            y_real (tf.Tensor): Batch of data sampled from real distribution
+            y_gen (tf.Tensor): Batch of data sampled from fake distribution
+
+        Returns:
+            tf.Tensor: The gradient penalty
+        """
+        y_interpolated = self.interpolate_data(y_real, y_gen)
+
+        with tf.GradientTape() as gp_tape:
+            gp_tape.watch(y_interpolated)
+            pred = self.critic([x, y_interpolated], training=True)
+
+        grads = gp_tape.gradient(pred, y_interpolated)
+        norm = tf.sqrt(tf.reduce_sum(tf.square(grads), axis=1))
+        gp = tf.reduce_mean((norm - 1.0)**2)
+        return gp
 
     @tf.function
     def train_critic(self, x, y):
@@ -119,7 +169,7 @@ class cWGAN:
             real_output = self.critic([x, y], training=True)
             fake_output = self.critic([x, predicted_y], training=True)
 
-            critic_loss_val = self.critic_loss(real_output, fake_output)
+            critic_loss_val = self.critic_loss(real_output, fake_output) + self.gp_weight * self.gradient_penalty(x, y, predicted_y)
 
         critic_grads = tape.gradient(critic_loss_val, self.critic.trainable_variables)
 
@@ -130,7 +180,7 @@ class cWGAN:
         return critic_loss_val
 
     @tf.function
-    def train_generator(self, x):
+    def train_generator(self, x, y):
         """
         Train generator on one batch of data
         x - batch of input data
@@ -138,18 +188,18 @@ class cWGAN:
         noise = tf.random.uniform((tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32)
 
         with tf.GradientTape() as tape:
-            generated_rJets = self.generator([x, noise], training=True)
-            fake_output = self.critic([x, generated_rJets], training=False)
-            generator_loss_val = self.generator_loss(fake_output)
+            predicted_y = self.generator([x, noise], training=True)
+            fake_output = self.critic([x, predicted_y], training=False)
+            generator_loss = self.generator_loss(fake_output)
 
         generator_grads = tape.gradient(
-            generator_loss_val, self.generator.trainable_variables
+            generator_loss, self.generator.trainable_variables
         )
         self.generator_optimizer.apply_gradients(
             zip(generator_grads, self.generator.trainable_variables)
         )
 
-        return generator_loss_val
+        return generator_loss
 
     @tf.function
     def make_generator_predictions(self, x):
@@ -182,7 +232,8 @@ class Trainer:
         critic_lr = params_dict["critic_lr"]
         clip_value = params_dict["clip_value"]
         noise_dims = params_dict["noise_dims"]
-        self.model = cWGAN(clip_value, noise_dims, gen_lr, critic_lr)
+        gp_weight = params_dict["gp_weight"]
+        self.model = cWGAN(clip_value, noise_dims, gen_lr, critic_lr, gp_weight)
 
         self.data = data_utils.load_jet_data(params_dict["data_path"])
         self.epochs = params_dict["epochs"]
@@ -213,7 +264,7 @@ class Trainer:
         x, y = self.sample_batch_of_data()
         critic_loss = self.model.train_critic(x, y)
         self.critic_losses.append(critic_loss)
-        self.model.clip_critic_weights()
+        #self.model.clip_critic_weights()
 
     def take_generator_step(self):
         """Sample a batch of data and do one forward pass and backpropagation step
@@ -221,7 +272,7 @@ class Trainer:
         generator post backprop step and the target distribution.
         """
         x, y = self.sample_batch_of_data()
-        generator_loss = self.model.train_generator(x)
+        generator_loss = self.model.train_generator(x, y)
         self.generator_losses.append(generator_loss)
 
         predicted_y = self.model.make_generator_predictions(x)
@@ -436,7 +487,8 @@ class MNISTTrainer(Trainer):
         noise_dims = params_dict["noise_dims"]
         gen_lr = params_dict["gen_lr"]
         critic_lr = params_dict["critic_lr"]
-        self.model = cWGAN_mnist(clip_value, noise_dims, gen_lr, critic_lr)
+        gp_weight = params_dict["gp_weight"]
+        self.model = cWGAN_mnist(clip_value, noise_dims, gen_lr, critic_lr, gp_weight)
 
         self.data = data_utils.load_mnist_data()
         self.epochs = params_dict["epochs"]
