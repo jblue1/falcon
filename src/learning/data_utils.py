@@ -12,7 +12,7 @@ def load_jet_data(data_path):
     Returns:
         tuple: tuple of ndarrays (parton_data, reco_data)
     """
-    data = np.loadtxt(data_path, skiprows=2)
+    data = np.loadtxt(data_path, skiprows=2, dtype=np.float32)
     partonPtMax = np.max(data[:, 0], axis=0)
     partonPtMin = np.min(data[:, 0], axis=0)
     partonMean = np.mean(data[:, 1:3], axis=0)
