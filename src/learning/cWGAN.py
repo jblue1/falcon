@@ -284,7 +284,7 @@ class Trainer:
         generator post backprop step and the target distribution.
         """
         x, y = self.sample_batch_of_data()
-        generator_loss = self.model.train_generator(x, y)
+        generator_loss = self.model.train_generator(x)
         self.generator_losses.append(generator_loss)
 
         predicted_y = self.model.make_generator_predictions(x)
