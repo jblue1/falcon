@@ -18,7 +18,7 @@ import os
 class cWGAN:
     """Class implementing a conditional wasserstein generative adversarial network"""
 
-    def __init__(self, clip_value, noise_dims, gen_lr, critic_lr, gp_weight):
+    def __init__(self, clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight):
         """Constructor
 
         Args:
@@ -31,8 +31,13 @@ class cWGAN:
 
         # hyper parameters recommended by paper
         self.clip_value = clip_value
-        self.critic_optimizer = tf.keras.optimizers.RMSprop(lr=critic_lr)
-        self.generator_optimizer = tf.keras.optimizers.RMSprop(lr=gen_lr)
+        if optimizer == "RMSprop":
+            self.critic_optimizer = tf.keras.optimizers.RMSprop(lr=critic_lr)
+            self.generator_optimizer = tf.keras.optimizers.RMSprop(lr=gen_lr)
+        elif optimizer == "Adam": 
+            self.critic_optimizer = tf.keras.optimizers.Adam(lr=critic_lr)
+            self.generator_optimizer = tf.keras.optimizers.Adam(lr=gen_lr)
+
         self.gp_weight = gp_weight
 
         self.noise_dims = noise_dims
@@ -243,9 +248,10 @@ class Trainer:
         gen_lr = params_dict["gen_lr"]
         critic_lr = params_dict["critic_lr"]
         clip_value = params_dict["clip_value"]
+        optimizer = params_dict["optimizer"]
         noise_dims = params_dict["noise_dims"]
         gp_weight = params_dict["gp_weight"]
-        self.model = cWGAN(clip_value, noise_dims, gen_lr, critic_lr, gp_weight)
+        self.model = cWGAN(clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight)
 
         self.data = data_utils.load_jet_data(params_dict["data_path"])
         self.epochs = params_dict["epochs"]
