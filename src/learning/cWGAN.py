@@ -13,6 +13,7 @@ import data_utils
 import file_utils
 import time
 import os
+import sys
 
 
 class cWGAN:
@@ -24,6 +25,7 @@ class cWGAN:
         Args:
             clip_value (float): Value for weight clipping the critic
             noise_dims (int): Size of noise vector input to the generator
+            optimizer (str): Choice of optimizer - either RMSprop or Adam
             gen_lr (float): learning rate of the generator optimizer
             critic_lr (float): learning rate of the critic optimizer
             gp_weight (float): Weight for the gradient penalty in the loss function
@@ -37,6 +39,10 @@ class cWGAN:
         elif optimizer == "Adam": 
             self.critic_optimizer = tf.keras.optimizers.Adam(lr=critic_lr)
             self.generator_optimizer = tf.keras.optimizers.Adam(lr=gen_lr)
+        else:
+            print("There was an error choosing an optimizer")
+            print("Please specify one of RMSprop or Adam in your configuration file")
+            sys.exit(1)
 
         self.gp_weight = gp_weight
 
