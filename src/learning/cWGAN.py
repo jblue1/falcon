@@ -13,6 +13,7 @@ import data_utils
 import file_utils
 import time
 import os
+import sys
 
 
 class cWGAN:
@@ -114,7 +115,7 @@ class cWGAN:
             l.set_weights(new_weights)
 
     @tf.function
-    def interpolate_data(self, y_real, y_gen):
+    def interpolate_data(self, x_real, x_gen, y_real, y_gen):
         """Interpolate between data points as described here: https://arxiv.org/pdf/1704.00028.pdf
 
         The gradient penalty acts on data sampled from straight lines between points in
@@ -126,6 +127,8 @@ class cWGAN:
 
         where t is in (0, 1).
         Args:
+            x_real (tf.Tensor): Batch of input data sampled from the real distribution
+            x_gen (tf.Tensor): Batch of input data sampled from the generated distribution
             y_real (tf.Tensor): Batch of data sampled from real distribution
             y_gen (tf.Tensor): Batch of data sampled from fake distribution
 
@@ -134,12 +137,14 @@ class cWGAN:
         """
         batch_size = tf.shape(y_real)[0]
         t = tf.random.normal([batch_size, 1], 0, 1, tf.float32)
-        diff = y_gen - y_real
-        y_new = t * diff + y_real
+        y_diff = y_gen - y_real
+        x_diff = x_gen - x_real
+        y_new = t * y_diff + y_real
+        x_new = t * x_diff + x_real
 
-        return y_new
+        return x_new, y_new
 
-    def gradient_penalty(self, x, y_real, y_gen):
+    def gradient_penalty(self, x_real, x_gen, y_real, y_gen):
         """Calculate the gradient penalty. See here for explantion: https://arxiv.org/pdf/1704.00028.pdf
 
         Args:
@@ -150,19 +155,21 @@ class cWGAN:
         Returns:
             tf.Tensor: The gradient penalty
         """
-        y_interpolated = self.interpolate_data(y_real, y_gen)
+        x_interpolated, y_interpolated = self.interpolate_data(x_real, x_gen, y_real, y_gen)
 
         with tf.GradientTape() as gp_tape:
             gp_tape.watch(y_interpolated)
-            pred = self.critic([x, y_interpolated], training=True)
+            gp_tape.watch(x_interpolated)
+            pred = self.critic([x_interpolated, y_interpolated], training=True)
 
-        grads = gp_tape.gradient(pred, y_interpolated)
-        norm = tf.sqrt(tf.reduce_sum(tf.square(grads), axis=1))
+        grads = gp_tape.gradient(pred, [x_interpolated, y_interpolated])
+        concat_grads = tf.concat([grads[0], grads[1]], 0)
+        norm = tf.sqrt(tf.reduce_sum(tf.square(concat_grads), axis=1))
         gp = tf.reduce_mean((norm - 1.0) ** 2)
         return gp
 
     @tf.function
-    def train_critic(self, x, y):
+    def train_critic(self, x1, y1, x2, y2):
         """Train critic on one batch of data
 
         Args:
@@ -173,15 +180,15 @@ class cWGAN:
             tf.Tensor: Critic loss for the batch
         """
 
-        noise = tf.random.uniform((tf.shape(x)[0], self.noise_dims), 0, 1, tf.float32)
+        noise = tf.random.uniform((tf.shape(x1)[0], self.noise_dims), 0, 1, tf.float32)
         with tf.GradientTape(persistent=True) as tape:
-            predicted_y = self.generator([x, noise], training=False)
-            real_output = self.critic([x, y], training=True)
-            fake_output = self.critic([x, predicted_y], training=True)
+            predicted_y = self.generator([x2, noise], training=False)
+            real_output = self.critic([x2, y2], training=True)
+            fake_output = self.critic([x2, predicted_y], training=True)
 
             critic_loss_val = self.critic_loss(
                 real_output, fake_output
-            ) + self.gp_weight * self.gradient_penalty(x, y, predicted_y)
+            ) + self.gp_weight * self.gradient_penalty(x1, x2, y1, predicted_y)
 
         critic_grads = tape.gradient(critic_loss_val, self.critic.trainable_variables)
 
@@ -279,8 +286,9 @@ class Trainer:
         """Sample a batch of data and do one forward pass and backpropagation step
         for the critic
         """
-        x, y = self.sample_batch_of_data()
-        critic_loss = self.model.train_critic(x, y)
+        x1, y1 = self.sample_batch_of_data()
+        x2, y2 = self.sample_batch_of_data()
+        critic_loss = self.model.train_critic(x1, y1, x2, y2)
         self.critic_losses.append(critic_loss)
         # self.model.clip_critic_weights()
 
