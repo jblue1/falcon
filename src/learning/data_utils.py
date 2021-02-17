@@ -67,12 +67,12 @@ def load_jet_data_inverse_scaling(data_path):
     pfPtMin = np.min(data[:, 4], axis=0)
     pfEMin = np.min(data[:, 7], axis=0)
 
-    data[:, 0] = (1/data[:, 0]) * (1/partonPtMin)
+    data[:, 0] = (1/data[:, 0]) * partonPtMin
     data[:, 1:3] = (data[:, 1:3] - partonMean) / partonStd
-    data[:, 3] = (1/data[:, 3]) * (1/partonEMin)
-    data[:, 4] = (1/data[:, 4]) * (1/pfPtMin)
+    data[:, 3] = (1/data[:, 3]) * partonEMin
+    data[:, 4] = (1/data[:, 4]) * pfPtMin
     data[:, 5:7] = (data[:, 5:7] - pfMean) / pfStd
-    data[:, 7] = (1/data[:, 7]) * (1/pfEMin)
+    data[:, 7] = (1/data[:, 7]) * pfEMin
 
     np.random.shuffle(data)
     parton_data = data[:, :4]
