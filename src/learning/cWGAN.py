@@ -265,7 +265,7 @@ class Trainer:
         gp_weight = params_dict["gp_weight"]
         self.model = cWGAN(clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight)
 
-        self.data = data_utils.load_jet_data(params_dict["data_path"])
+        self.data = data_utils.load_jet_data_inverse_scaling(params_dict["data_path"])
         self.epochs = params_dict["epochs"]
         self.num_training_examples = len(self.data[0])
         self.weight_saving_interval = params_dict["weight_saving_interval"]
