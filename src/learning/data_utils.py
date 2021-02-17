@@ -6,6 +6,10 @@ import sys
 def load_jet_data(data_path):
     """Load and normalize the jet data
 
+    For each 4-momentum, scale Pt and E by subtracting the min and
+    dividing by the max (i.e scale to [0, 1]), and scale eta and phi
+    by subtracting by the mean and dividing by the std deviation 
+    (i.e scale to mean of 0 and unit variance)
     Args:
         data_path (path-like): path to txt file with jet 4-momenta
 
@@ -33,6 +37,37 @@ def load_jet_data(data_path):
     data[:, 4] = (data[:, 4] - pfPtMin) / pfPtMax
     data[:, 5:7] = (data[:, 5:7] - pfMean) / pfStd
     data[:, 7] = (data[:, 7] - pfEMin) / pfEMax
+
+    np.random.shuffle(data)
+    parton_data = data[:, :4]
+    reco_data = data[:, 4:]
+    return (parton_data, reco_data)
+
+
+def load_jet_data_inverse_scaling(data_path):
+    """Load and normalize the jet data
+
+    For Pt and E, instead of scaling to [0, 1] by subtracting the min and adding the max,
+    this function scales each by 1/Pt (or 1/E). 
+    Args:
+        data_path (path-like): path to txt file with jet 4-momenta
+
+    Returns:
+        tuple: tuple of ndarrays (parton_data, reco_data)
+    """
+    data = np.loadtxt(data_path, skiprows=2, dtype=np.float32)
+    partonMean = np.mean(data[:, 1:3], axis=0)
+    partonStd = np.std(data[:, 1:3], axis=0)
+
+    pfMean = np.mean(data[:, 5:7], axis=0)
+    pfStd = np.std(data[:, 5:7], axis=0)
+
+    data[:, 0] = 1/data[:, 0]
+    data[:, 1:3] = (data[:, 1:3] - partonMean) / partonStd
+    data[:, 3] = 1/data[:, 3]
+    data[:, 4] = 1/data[:, 4]
+    data[:, 5:7] = (data[:, 5:7] - pfMean) / pfStd
+    data[:, 7] = 1/data[:, 7]
 
     np.random.shuffle(data)
     parton_data = data[:, :4]
