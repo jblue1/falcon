@@ -5,7 +5,6 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
-//#include "modules/Delphes.h"
 #include "ExRootAnalysis/ExRootTreeReader.h"
 #include "classes/DelphesClasses.h"
 #include "classes/DelphesFactory.h"
@@ -15,7 +14,7 @@
 using namespace fastjet;
 
 int main(int argc, char const *argv[]) {
-  std::ofstream write_out("text.txt");
+  std::ofstream write_out("test_CMS_Phase_II.txt");
   assert(write_out.is_open());
 
   write_out << "The file contains 4 vectors of matched parton and reco jets. "
@@ -43,10 +42,20 @@ int main(int argc, char const *argv[]) {
   std::vector<Float_t> *partonPz = 0;
   std::vector<Float_t> *partonE = 0;
 
+  std::vector<Float_t> *genJetPt = 0;
+  std::vector<Float_t> *genJetEta = 0;
+  std::vector<Float_t> *genJetPhi = 0;
+  std::vector<Float_t> *genJetE = 0;
+
   partonTree->SetBranchAddress("partonPx", &partonPx);
   partonTree->SetBranchAddress("partonPy", &partonPy);
   partonTree->SetBranchAddress("partonPz", &partonPz);
   partonTree->SetBranchAddress("partonE", &partonE);
+
+  partonTree->SetBranchAddress("genJetPt", &genJetPt);
+  partonTree->SetBranchAddress("genJetEta", &genJetEta);
+  partonTree->SetBranchAddress("genJetPhi", &genJetPhi);
+  partonTree->SetBranchAddress("genJetE", &genJetE);
 
   int numberOfCMSSWEvents = partonTree->GetEntries();
 
@@ -79,6 +88,9 @@ int main(int argc, char const *argv[]) {
         if (partonJets[j].pt() > 20) {
           float minDRDelphesJet = 10.0;
           int delphesJetIndex = 0;
+
+          float minDRGenJet = 10.0;
+          int genJetIndex = 0;
           for (int k = 0; k < jetEntries; k++) {
             Jet *jet = (Jet *)branchJet->At(k);
             float dR = deltaR(jet->Eta, jet->Phi, partonJets[j].rap(),
@@ -89,12 +101,26 @@ int main(int argc, char const *argv[]) {
               delphesJetIndex = k;
             }
           }
-          if (minDRDelphesJet < 0.35) {
+
+          for (int k = 0; k < genJetPt->size(); k++) {
+            if ((*genJetPt)[k] > 10.0) {
+              float dR = deltaR((*genJetEta)[k], (*genJetPhi)[k],
+                                partonJets[j].rap(), partonJets[j].phi_std());
+
+              if (dR < minDRGenJet) {
+                minDRGenJet = dR;
+                genJetIndex = k;
+              }
+            }
+          }
+          if (minDRDelphesJet < 0.35 && minDRGenJet < 0.35) {
             Jet *matchedJet = (Jet *)branchJet->At(delphesJetIndex);
             write_out << partonJets[j].pt() << " " << partonJets[j].rap() << " "
-                      << partonJets[j].phi_std() << " " << partonJets[j].e()
+                      << partonJets[j].phi_std() << " "
                       << " " << matchedJet->PT << " " << matchedJet->Eta << " "
-                      << matchedJet->Phi << std::endl;
+                      << matchedJet->Phi << " " << (*genJetPt)[genJetIndex]
+                      << " " << (*genJetEta)[genJetIndex] << " "
+                      << (*genJetPhi)[genJetIndex] << std::endl;
           }
         }
       }
