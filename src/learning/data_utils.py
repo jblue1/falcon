@@ -1,6 +1,8 @@
 import numpy as np
 import tensorflow as tf
 import sys
+import numpy as np
+from math import pi
 
 
 def load_jet_data(data_path):
@@ -190,8 +192,67 @@ def test_concatenate_images_labels():
     tf.debugging.assert_equal(images_and_labels, desired_output)
 
 
+def gaussian_fit(x):
+    """Given a parton jet pt (x), return g(y | x) ie the conditional density
+    of the reco jet pt (y) given x. 
+
+    The hardcoded values came from doing linear fits on the mean of g(y|x) and 
+    the square root of the stdDev of g(y|x), see the notebook "DensityEstimation.ipynb"
+    to see where these values came from.
+
+    Args:
+        x ([type]): [description]
+    """
+    SLOPE_mean = 0.90923223
+    INTERCEPT_mean = 1.650221590
+    SLOPE_stdDev = 0.01101888
+    INTERCEPT_stdDev = 2.92408837
+    mean = SLOPE_mean*x + INTERCEPT_mean
+    stdDev = (SLOPE_stdDev*x + INTERCEPT_stdDev)**2
+
+    return mean, stdDev
+
+
+def scale_classifier_data(data):
+    minPartonPt = np.min(data[:, 0])
+    minRecoPt = np.min(data[:, 1])
+    data[:, 0] = (1/data[:, 0])*minPartonPt
+    data[:, 1] = (1/data[:, 1])*minRecoPt
+    return data
+
+
+def load_classifier_data(data_path):
+    #TODO: Explain what this is doing
+    """[summary]
+
+    Args:
+        data_path ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    data = np.loadtxt(data_path, skiprows=2, dtype=np.float32)
+    split = int(0.8*len(data))
+    partonPt = data[:split, 0:1]
+    recoPt = data[:split, 3:4]
+    half = int(len(partonPt)/2)
+    T1_partonPt = partonPt[:half, :]
+    T1_recoPt = recoPt[:half, :]
+    T1_labels = np.ones((T1_partonPt.shape), dtype=np.float32)
+    T1 = np.concatenate((T1_partonPt, T1_recoPt, T1_labels), axis=1)
+    T0_partonPt = partonPt[half:, :]
+    mean, stdDev = gaussian_fit(T0_partonPt)
+    T0_recoPt = np.random.normal(loc=mean, scale=stdDev)
+    T0_labels = np.zeros((T0_partonPt.shape), dtype=np.float32)
+    T0 = np.concatenate((T0_partonPt, T0_recoPt, T0_labels), axis=1)
+    dataset = np.concatenate((T1, T0))
+    np.random.shuffle(dataset)
+    return scale_classifier_data(dataset)
+
+
 def main():
-    test_concatenate_images_labels()
+    #test_concatenate_images_labels()
+    load_classifier_data('./data/processed/newPartonMatchedJets.txt')
 
 
 if __name__ == "__main__":

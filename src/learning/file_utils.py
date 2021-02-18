@@ -105,6 +105,23 @@ def get_FCNN_hyperparams(params_file_path):
         return params_dict
 
 
+def get_classifier_hyperparams(params_file_path):
+    """Get hyperparameters from a json file
+
+    Args:
+        params_file_path (path-like): Path to json file
+
+    Returns:
+        dict: Dictionary with hyperparameters.
+    """
+    with open(params_file_path, "r") as f:
+        params_dict = json.load(f)
+    if "classifier" in params_dict.keys():
+        return params_dict["classifier"]
+    else:
+        return params_dict
+
+
 def get_cGAN_hyperparams(params_file_path):
     """Get hyperparameters from a json file
 

@@ -3,12 +3,22 @@ import cGAN
 import file_utils
 import FCNN
 import cWGAN
+import classifier
 
 
 def train_fcnn(params):
     print("Training fcnn")
     params_dict = file_utils.get_FCNN_hyperparams(params)
     trainer = FCNN.Trainer(params_dict)
+    history = trainer.train()
+    trainer.save_losses(history)
+    trainer.save_model()
+    trainer.save_params(params_dict)
+
+def train_classifier(params):
+    print("Training classifier")
+    params_dict = file_utils.get_classifier_hyperparams(params)
+    trainer = classifier.Trainer(params_dict)
     history = trainer.train()
     trainer.save_losses(history)
     trainer.save_model()
@@ -48,6 +58,9 @@ def train(model, params):
 
     elif model == "cWGAN":
         train_cWGAN(params)
+
+    elif model == "classifier":
+        train_classifier(params)
 
     else:
         usage("Invalid model chosen")
