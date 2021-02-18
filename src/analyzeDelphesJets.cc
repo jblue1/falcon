@@ -1,26 +1,30 @@
+#include "ExRootAnalysis/ExRootTreeReader.h"
 #include "TChain.h"
 #include "TClonesArray.h"
 #include "TFile.h"
 #include "TTree.h"
-#include <cassert>
-#include <fstream>
-#include <iostream>
-#include "ExRootAnalysis/ExRootTreeReader.h"
 #include "classes/DelphesClasses.h"
 #include "classes/DelphesFactory.h"
 #include "fastjet/ClusterSequence.hh"
 #include "helpers.h"
+#include <cassert>
+#include <fstream>
+#include <iostream>
 
 using namespace fastjet;
 
 int main(int argc, char const *argv[]) {
-  std::ofstream write_out("test_CMS_Phase_II.txt");
+  std::ofstream write_out("test_CMS_Default_Card_GenJets_.txt");
   assert(write_out.is_open());
 
-  write_out << "The file contains 4 vectors of matched parton and reco jets. "
-               "The columns are"
-            << std::endl;
-  write_out << "Pt_p Eta_p Phi_p E_p Pt_r Eta_r Phi_r E_r" << std::endl;
+  write_out
+      << "The file contains 4 vectors of matched parton, reco, and gen jets. "
+         "The columns are"
+      << std::endl;
+  write_out
+      << "Parton Pt | Parton Eta | Parton Phi | Delphes Reco Pt | Delphes Reco "
+         "Eta | Delphes Reco Phi | Gen Pt | Gen Eta | Gen Phi"
+      << std::endl;
 
   /* Set up variables for extracting the Delphes-reco jets */
   TChain chain("Delphes");
@@ -28,7 +32,8 @@ int main(int argc, char const *argv[]) {
 
   ExRootTreeReader *treeReader = new ExRootTreeReader(&chain);
   Long64_t numberOfDelphesEvents = treeReader->GetEntries();
-  TClonesArray *branchJet = treeReader->UseBranch("Jet");
+  TClonesArray *branchRecoJet = treeReader->UseBranch("Jet");
+  TClonesArray *branchGenJet = treeReader->UseBranch("GenJet");
 
   /* Set up variables for extracting the parton jets */
   std::string dataFile(argv[2]);
@@ -83,22 +88,37 @@ int main(int argc, char const *argv[]) {
 
       for (int j = 0; j < partonJets.size(); j++) {
         treeReader->ReadEntry(i);
-        int jetEntries = branchJet->GetEntries();
+        int delphesRecoJetEntries = branchRecoJet->GetEntries();
+        int delphesGenJetEntries = branchGenJet->GetEntries();
 
         if (partonJets[j].pt() > 20) {
-          float minDRDelphesJet = 10.0;
-          int delphesJetIndex = 0;
+          float minDRDelphesRecoJet = 10.0;
+          int delphesRecoJetIndex = 0;
 
           float minDRGenJet = 10.0;
           int genJetIndex = 0;
-          for (int k = 0; k < jetEntries; k++) {
-            Jet *jet = (Jet *)branchJet->At(k);
+
+          float minDRDelphesGenJet = 10.0;
+          int delphesGenJetIndex = 0;
+          for (int k = 0; k < delphesRecoJetEntries; k++) {
+            Jet *jet = (Jet *)branchRecoJet->At(k);
             float dR = deltaR(jet->Eta, jet->Phi, partonJets[j].rap(),
                               partonJets[j].phi_std());
 
-            if (dR < minDRDelphesJet) {
-              minDRDelphesJet = dR;
-              delphesJetIndex = k;
+            if (dR < minDRDelphesRecoJet) {
+              minDRDelphesRecoJet = dR;
+              delphesRecoJetIndex = k;
+            }
+          }
+
+          for (int k = 0; k < delphesGenJetEntries; k++) {
+            Jet *jet = (Jet *)branchGenJet->At(k);
+            float dR = deltaR(jet->Eta, jet->Phi, partonJets[j].rap(),
+                              partonJets[j].phi_std());
+
+            if (dR < minDRDelphesGenJet) {
+              minDRDelphesGenJet = dR;
+              delphesGenJetIndex = k;
             }
           }
 
@@ -113,14 +133,24 @@ int main(int argc, char const *argv[]) {
               }
             }
           }
-          if (minDRDelphesJet < 0.35 && minDRGenJet < 0.35) {
-            Jet *matchedJet = (Jet *)branchJet->At(delphesJetIndex);
+
+          if (minDRDelphesRecoJet < 0.35 && minDRGenJet < 0.35 &&
+              minDRDelphesGenJet < 0.35) {
+            Jet *matchedDelphesRecoJet =
+                (Jet *)branchRecoJet->At(delphesRecoJetIndex);
+            Jet *matchedDelphesGenJet =
+                (Jet *)branchGenJet->At(delphesGenJetIndex);
             write_out << partonJets[j].pt() << " " << partonJets[j].rap() << " "
                       << partonJets[j].phi_std() << " "
-                      << " " << matchedJet->PT << " " << matchedJet->Eta << " "
-                      << matchedJet->Phi << " " << (*genJetPt)[genJetIndex]
-                      << " " << (*genJetEta)[genJetIndex] << " "
-                      << (*genJetPhi)[genJetIndex] << std::endl;
+                      << matchedDelphesRecoJet->PT << " "
+                      << matchedDelphesRecoJet->Eta << " "
+                      << matchedDelphesRecoJet->Phi << " "
+                      << (*genJetPt)[genJetIndex] << " "
+                      << (*genJetEta)[genJetIndex] << " "
+                      << (*genJetPhi)[genJetIndex] << " "
+                      << matchedDelphesGenJet->PT << " "
+                      << matchedDelphesGenJet->Eta << " "
+                      << matchedDelphesGenJet->Phi << std::endl;
           }
         }
       }
