@@ -214,10 +214,8 @@ def gaussian_fit(x):
 
 
 def scale_classifier_data(data):
-    minPartonPt = np.min(data[:, 0])
-    minRecoPt = np.min(data[:, 1])
-    data[:, 0] = (1/data[:, 0])*minPartonPt
-    data[:, 1] = (1/data[:, 1])*minRecoPt
+    data[:, 0] = (1/data[:, 0])
+    data[:, 1] = (1/data[:, 1])
     return data
 
 
@@ -234,7 +232,7 @@ def load_classifier_data(data_path):
     data = np.loadtxt(data_path, skiprows=2, dtype=np.float32)
     split = int(0.8*len(data))
     partonPt = data[:split, 0:1]
-    recoPt = data[:split, 3:4]
+    recoPt = data[:split, 4:5]
     half = int(len(partonPt)/2)
     T1_partonPt = partonPt[:half, :]
     T1_recoPt = recoPt[:half, :]
