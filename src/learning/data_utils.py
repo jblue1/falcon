@@ -93,18 +93,15 @@ def load_jet_data_log_scaling(data_path):
         tuple: tuple of ndarrays (parton_data, reco_data)
     """
     data = np.loadtxt(data_path, skiprows=2, dtype=np.float32)
-    partonMean = np.mean(data[:, 1:3], axis=0)
-    partonStd = np.std(data[:, 1:3], axis=0)
-
-    pfMean = np.mean(data[:, 5:7], axis=0)
-    pfStd = np.std(data[:, 5:7], axis=0)
-
     np.log10(data[:, 0], out=data[:, 0])
     np.log10(data[:, 3], out=data[:, 3])
     np.log10(data[:, 4], out=data[:, 4])
     np.log10(data[:, 7], out=data[:, 7])
-    data[:, 1:3] = (data[:, 1:3] - partonMean) / partonStd
-    data[:, 5:7] = (data[:, 5:7] - pfMean) / pfStd
+    
+    mean = np.mean(data, axis=0)
+    std = np.std(data, axis=0)
+    
+    data = (data - mean) / std
 
     np.random.shuffle(data)
     parton_data = data[:, :4]
