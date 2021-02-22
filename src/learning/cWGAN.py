@@ -19,7 +19,7 @@ import sys
 class cWGAN:
     """Class implementing a conditional wasserstein generative adversarial network"""
 
-    def __init__(self, clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight):
+    def __init__(self, clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous=False, weights_path=None):
         """Constructor
 
         Args:
@@ -49,6 +49,13 @@ class cWGAN:
         self.noise_dims = noise_dims
         self.generator = self.build_generator()
         self.critic = self.build_critic()
+
+        if load_previous:
+            self.initialize_model(weights_path)
+
+    def initialize_model(self, weights_path):
+        self.generator.load_weights(weights_path)
+
 
     def build_generator(self):
         noise = keras.Input(shape=(self.noise_dims,), name="noiseIn")
@@ -265,10 +272,19 @@ class Trainer:
         optimizer = params_dict["optimizer"]
         noise_dims = params_dict["noise_dims"]
         gp_weight = params_dict["gp_weight"]
+        load_previous = params_dict["load_previous"]
+        weights_path = params_dict["weights_path"]
+
+        if load_previous:
+            self.model = cWGAN(
+                clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous, weights_path
+            )
+
         self.model = cWGAN(
             clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight
         )
 
+        
         data_path = params_dict["data_path"]
         if params_dict["data_scaling"] == "inverse":
             self.data = data_utils.load_jet_data_inverse_scaling(data_path)
@@ -291,6 +307,8 @@ class Trainer:
         self.generator_losses = []
         self.wass_estimates = []
 
+
+
     def sample_batch_of_data(self):
         """Randomly sample self.batch_size (x, y) pairs from the dataset
 
@@ -312,7 +330,6 @@ class Trainer:
         x2, y2 = self.sample_batch_of_data()
         critic_loss = self.model.train_critic(x1, y1, x2, y2)
         self.critic_losses.append(critic_loss)
-        # self.model.clip_critic_weights()
 
     def take_generator_step(self):
         """Sample a batch of data and do one forward pass and backpropagation step
@@ -356,6 +373,23 @@ class Trainer:
                     )
                 )
             print("Time for epoch {}: {:1f}s".format(epoch, time.time() - start))
+
+    def train_critic_only(self):
+        """Train only the critic for two epochs
+
+        Since only the generator weights were saved, when continuing a training,
+        this function trains only the critic for two epochs to get it up to speed
+        before continuing normal training. 
+        """
+        batches_per_epoch = self.num_training_examples // self.batch_size
+        for epoch in range(2):
+            start = time.time()
+            for batch_number in range(batches_per_epoch):
+                # train critic for num_critic_iters
+                for critic_iter in range(self.num_critic_iters):
+                    self.take_critic_step()
+
+
 
     def save_weights(self, iteration):
         """Save weights of the model to the save directory
