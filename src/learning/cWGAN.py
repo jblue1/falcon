@@ -36,7 +36,7 @@ class cWGAN:
         if optimizer == "RMSprop":
             self.critic_optimizer = tf.keras.optimizers.RMSprop(lr=critic_lr)
             self.generator_optimizer = tf.keras.optimizers.RMSprop(lr=gen_lr)
-        elif optimizer == "Adam": 
+        elif optimizer == "Adam":
             self.critic_optimizer = tf.keras.optimizers.Adam(lr=critic_lr)
             self.generator_optimizer = tf.keras.optimizers.Adam(lr=gen_lr)
         else:
@@ -160,7 +160,9 @@ class cWGAN:
         Returns:
             tf.Tensor: The gradient penalty
         """
-        x_interpolated, y_interpolated = self.interpolate_data(x_real, x_gen, y_real, y_gen)
+        x_interpolated, y_interpolated = self.interpolate_data(
+            x_real, x_gen, y_real, y_gen
+        )
 
         with tf.GradientTape() as gp_tape:
             gp_tape.watch(y_interpolated)
@@ -263,9 +265,24 @@ class Trainer:
         optimizer = params_dict["optimizer"]
         noise_dims = params_dict["noise_dims"]
         gp_weight = params_dict["gp_weight"]
-        self.model = cWGAN(clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight)
+        self.model = cWGAN(
+            clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight
+        )
 
-        self.data = data_utils.load_jet_data_inverse_scaling(params_dict["data_path"])
+        data_path = params_dict["data_path"]
+        if params_dict["data_scaling"] == "inverse":
+            self.data = data_utils.load_jet_data_inverse_scaling(data_path)
+        elif params_dict["data_scaling"] == "log":
+            self.data = data_utils.load_jet_data_log_scaling(data_path)
+        elif params_dict["data_scaling"] == "minmax":
+            self.data = data_utils.load_jet_data(data_path)
+        else:
+            print("There was an error loading the data")
+            print(
+                "Please specify a data scaling scheme in your configuration file: The options are: inverse, log, and minmax"
+            )
+            sys.exit(1)
+
         self.epochs = params_dict["epochs"]
         self.num_training_examples = len(self.data[0])
         self.weight_saving_interval = params_dict["weight_saving_interval"]
