@@ -42,11 +42,7 @@ def train_cWGAN(params):
     if params_dict["data_path"] == "MNIST":
         trainer = cWGAN.MNISTTrainer(params_dict)
     else:
-        trainer = cWGAN.Trainer(params_dict)
-    
-    if params_dict["load_previous"]:
-        trainer.train_critic_only()
-        
+        trainer = cWGAN.Trainer(params_dict)        
     trainer.train()
     trainer.save_losses()
     trainer.save_model()

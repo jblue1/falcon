@@ -19,7 +19,7 @@ import sys
 class cWGAN:
     """Class implementing a conditional wasserstein generative adversarial network"""
 
-    def __init__(self, clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous=False, weights_path=None):
+    def __init__(self, clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous, weights_path, iteration):
         """Constructor
 
         Args:
@@ -29,9 +29,10 @@ class cWGAN:
             gen_lr (float): learning rate of the generator optimizer
             critic_lr (float): learning rate of the critic optimizer
             gp_weight (float): Weight for the gradient penalty in the loss function
+            load_previous (bool): Whether to load weights from a previous run
+            weights_path (path-like): If load_previous is true, path to model weights
+            iteration (int): If load_previous is true, the iteration of weights to load
         """
-
-        # hyper parameters recommended by paper
         self.clip_value = clip_value
         if optimizer == "RMSprop":
             self.critic_optimizer = tf.keras.optimizers.RMSprop(lr=critic_lr)
@@ -51,10 +52,12 @@ class cWGAN:
         self.critic = self.build_critic()
 
         if load_previous:
-            self.initialize_model(weights_path)
+            self.initialize_model(weights_path, iteration)
 
-    def initialize_model(self, weights_path):
-        self.generator.load_weights(weights_path)
+    def initialize_model(self, weights_path, iteration):
+        """Load weights from previous run"""
+        self.generator.load_weights(weights_path + 'gen_' + str(iteration))
+        self.critic.load_weights(weights_path + 'critic_' + str(iteration))
 
 
     def build_generator(self):
@@ -274,14 +277,10 @@ class Trainer:
         gp_weight = params_dict["gp_weight"]
         load_previous = params_dict["load_previous"]
         weights_path = params_dict["weights_path"]
-
-        if load_previous:
-            self.model = cWGAN(
-                clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous, weights_path
-            )
+        iteration = params_dict["iteration"]
 
         self.model = cWGAN(
-            clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight
+            clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous, weights_path, iteration
         )
 
         
@@ -373,23 +372,6 @@ class Trainer:
                     )
                 )
             print("Time for epoch {}: {:1f}s".format(epoch, time.time() - start))
-
-    def train_critic_only(self):
-        """Train only the critic for two epochs
-
-        Since only the generator weights were saved, when continuing a training,
-        this function trains only the critic for two epochs to get it up to speed
-        before continuing normal training. 
-        """
-        batches_per_epoch = self.num_training_examples // self.batch_size
-        for epoch in range(2):
-            start = time.time()
-            for batch_number in range(batches_per_epoch):
-                # train critic for num_critic_iters
-                for critic_iter in range(self.num_critic_iters):
-                    self.take_critic_step()
-
-
 
     def save_weights(self, iteration):
         """Save weights of the model to the save directory
