@@ -399,8 +399,11 @@ class Trainer:
         """
         checkpoint_dir = self.save_dir + "/training_checkpoints"
         gen_filename = os.path.join(checkpoint_dir, "gen_" + str(iteration))
+        critic_filename = os.path.join(checkpoint_dir, "critic_" + str(iteration))
         print("Saving generator weights at {}".format(gen_filename))
+        print("Saving generator weights at {}".format(critic_filename))
         self.model.generator.save_weights(gen_filename)
+        self.model.generator.save_weights(critic_filename)
 
     def save_losses(self):
         """Save training losses to a txt file"""
