@@ -11,18 +11,19 @@ def train_fcnn(params):
     params_dict = file_utils.get_FCNN_hyperparams(params)
     trainer = FCNN.Trainer(params_dict)
     history = trainer.train()
-    trainer.save_losses(history)
     trainer.save_model()
     trainer.save_params(params_dict)
+    trainer.save_losses(history)
+
 
 def train_classifier(params):
     print("Training classifier")
     params_dict = file_utils.get_classifier_hyperparams(params)
     trainer = classifier.Trainer(params_dict)
-    history = trainer.train()
-    trainer.save_losses(history)
     trainer.save_model()
     trainer.save_params(params_dict)
+    history = trainer.train()
+    trainer.save_losses(history)
 
 
 def train_cGAN(params):
@@ -42,11 +43,11 @@ def train_cWGAN(params):
     if params_dict["data_path"] == "MNIST":
         trainer = cWGAN.MNISTTrainer(params_dict)
     else:
-        trainer = cWGAN.Trainer(params_dict)        
-    trainer.train()
-    trainer.save_losses()
+        trainer = cWGAN.Trainer(params_dict)
     trainer.save_model()
     trainer.save_params(params_dict)
+    trainer.train()
+    trainer.save_losses()
 
 
 def train(model, params):
