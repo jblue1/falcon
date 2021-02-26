@@ -385,7 +385,7 @@ class Trainer:
         print("Saving generator weights at {}".format(gen_filename))
         print("Saving generator weights at {}".format(critic_filename))
         self.model.generator.save_weights(gen_filename)
-        self.model.generator.save_weights(critic_filename)
+        self.model.critic.save_weights(critic_filename)
 
     def save_losses(self):
         """Save training losses to a txt file"""
