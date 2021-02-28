@@ -191,6 +191,8 @@ int main(int argc, char const *argv[])
     //pfCandTree variables
     int numEvents = tree->GetEntries();
 
+    std::cout << "Num Events: " << numEvents << std::endl;
+
     int numPartonJets = 0;
     int numPartonJetswMatch = 0;
     int numRecoJets = 0;
