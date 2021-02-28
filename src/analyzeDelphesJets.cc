@@ -13,8 +13,32 @@
 
 using namespace fastjet;
 
+/** Cluster a given set of particles into jets using the anti-kt algorithm with
+ * R = 0.4.
+ */
+std::vector<PseudoJet> cluster_jets(std::vector<Float_t> *px,
+                                    std::vector<Float_t> *py,
+                                    std::vector<Float_t> *pz,
+                                    std::vector<Float_t> *energy) {
+  int numberOfParticles = px->size();
+  std::vector<PseudoJet> particles;
+  for (int j = 0; j < numberOfParticles; j++) {
+    particles.push_back(PseudoJet((*px)[j], (*py)[j], (*pz)[j], (*energy)[j]));
+    particles[j].set_user_index(j);
+  }
+
+  // make jets
+  double R = 0.4;
+  JetDefinition jet_def(antikt_algorithm, R);
+  ClusterSequence cs(particles, jet_def);
+
+  std::vector<PseudoJet> jets = cs.inclusive_jets();
+
+  return jets;
+}
+
 int main(int argc, char const *argv[]) {
-  std::ofstream write_out("test_CMS_Default_Card_GenJets_.txt");
+  std::ofstream write_out("test_CMS_Default_Card_R0-4.txt");
   assert(write_out.is_open());
 
   write_out
@@ -23,7 +47,8 @@ int main(int argc, char const *argv[]) {
       << std::endl;
   write_out
       << "Parton Pt | Parton Eta | Parton Phi | Delphes Reco Pt | Delphes Reco "
-         "Eta | Delphes Reco Phi | Gen Pt | Gen Eta | Gen Phi"
+         "Eta | Delphes Reco Phi | Gen Pt | Gen Eta | Gen Phi | Reco Pt | Reco Eta |"
+         " Reco Phi | PfCand Pt | PfCand Eta | PfCand Phi"
       << std::endl;
 
   /* Set up variables for extracting the Delphes-reco jets */
@@ -47,20 +72,40 @@ int main(int argc, char const *argv[]) {
   std::vector<Float_t> *partonPz = 0;
   std::vector<Float_t> *partonE = 0;
 
+  std::vector<Float_t> *pfCandPx = 0;
+  std::vector<Float_t> *pfCandPy = 0;
+  std::vector<Float_t> *pfCandPz = 0;
+  std::vector<Float_t> *pfCandE = 0;
+
   std::vector<Float_t> *genJetPt = 0;
   std::vector<Float_t> *genJetEta = 0;
   std::vector<Float_t> *genJetPhi = 0;
   std::vector<Float_t> *genJetE = 0;
+
+  std::vector<Float_t> *recoJetPt = 0;
+  std::vector<Float_t> *recoJetEta = 0;
+  std::vector<Float_t> *recoJetPhi = 0;
+  std::vector<Float_t> *recoJetE = 0;
 
   partonTree->SetBranchAddress("partonPx", &partonPx);
   partonTree->SetBranchAddress("partonPy", &partonPy);
   partonTree->SetBranchAddress("partonPz", &partonPz);
   partonTree->SetBranchAddress("partonE", &partonE);
 
+  partonTree->SetBranchAddress("pfCandPx", &pfCandPx);
+  partonTree->SetBranchAddress("pfCandPy", &pfCandPy);
+  partonTree->SetBranchAddress("pfCandPz", &pfCandPz);
+  partonTree->SetBranchAddress("pfCandE", &pfCandE);
+
   partonTree->SetBranchAddress("genJetPt", &genJetPt);
   partonTree->SetBranchAddress("genJetEta", &genJetEta);
   partonTree->SetBranchAddress("genJetPhi", &genJetPhi);
   partonTree->SetBranchAddress("genJetE", &genJetE);
+
+  partonTree->SetBranchAddress("pfJetPt", &recoJetPt);
+  partonTree->SetBranchAddress("pfJetEta", &recoJetEta);
+  partonTree->SetBranchAddress("pfJetPhi", &recoJetPhi);
+  partonTree->SetBranchAddress("pfJetE", &recoJetE);
 
   int numberOfCMSSWEvents = partonTree->GetEntries();
 
@@ -68,20 +113,12 @@ int main(int argc, char const *argv[]) {
 
   for (int i = 0; i < numberOfCMSSWEvents; i++) {
     partonTree->GetEntry(i);
-    int numPartons = partonPx->size();
-    std::vector<PseudoJet> partons;
-    for (int j = 0; j < numPartons; j++) {
-      partons.push_back(PseudoJet((*partonPx)[j], (*partonPy)[j],
-                                  (*partonPz)[j], (*partonE)[j]));
-      partons[j].set_user_index(j);
-    }
 
-    // make parton jets
-    double R = 0.4;
-    JetDefinition jet_def(antikt_algorithm, R);
-    ClusterSequence cs(partons, jet_def);
-
-    std::vector<PseudoJet> partonJets = cs.inclusive_jets();
+    std::vector<PseudoJet> partonJets =
+        cluster_jets(partonPx, partonPy, partonPz, partonE);
+    
+    std::vector<PseudoJet> pfCandJets =
+        cluster_jets(pfCandPx, pfCandPy, pfCandPz, pfCandE);
 
     if (partonJets.size() > 0) {
       // loop through parton jets looking for matches
@@ -100,6 +137,14 @@ int main(int argc, char const *argv[]) {
 
           float minDRDelphesGenJet = 10.0;
           int delphesGenJetIndex = 0;
+
+          float minDRRecoJet = 10.0;
+          int recoJetIndex = 0;
+
+          float minDRPfCandJet = 10.0;
+          int pfCandJetIndex = 0;
+
+
           for (int k = 0; k < delphesRecoJetEntries; k++) {
             Jet *jet = (Jet *)branchRecoJet->At(k);
             float dR = deltaR(jet->Eta, jet->Phi, partonJets[j].rap(),
@@ -134,8 +179,32 @@ int main(int argc, char const *argv[]) {
             }
           }
 
+          for (int k = 0; k < recoJetPt->size(); k++) {
+            if ((*recoJetPt)[k] > 10.0) {
+              float dR = deltaR((*recoJetEta)[k], (*recoJetPhi)[k],
+                                partonJets[j].rap(), partonJets[j].phi_std());
+
+              if (dR < minDRRecoJet) {
+                minDRRecoJet = dR;
+                recoJetIndex = k;
+              }
+            }
+          }
+
+          for (int k = 0; k < pfCandJets.size(); k++) {
+            if (pfCandJets[k].pt() > 10.0) {
+              float dR = deltaR(pfCandJets[k].rap(), pfCandJets[k].phi_std(),
+                                partonJets[j].rap(), partonJets[j].phi_std());
+
+              if (dR < minDRPfCandJet) {
+                minDRPfCandJet = dR;
+                pfCandJetIndex = k;
+              }
+            }
+          }
+
           if (minDRDelphesRecoJet < 0.35 && minDRGenJet < 0.35 &&
-              minDRDelphesGenJet < 0.35) {
+              minDRDelphesGenJet < 0.35 && minDRRecoJet < 0.35 && minDRPfCandJet < 0.35) {
             Jet *matchedDelphesRecoJet =
                 (Jet *)branchRecoJet->At(delphesRecoJetIndex);
             Jet *matchedDelphesGenJet =
@@ -150,7 +219,14 @@ int main(int argc, char const *argv[]) {
                       << (*genJetPhi)[genJetIndex] << " "
                       << matchedDelphesGenJet->PT << " "
                       << matchedDelphesGenJet->Eta << " "
-                      << matchedDelphesGenJet->Phi << std::endl;
+                      << matchedDelphesGenJet->Phi << " "
+                      << (*recoJetPt)[recoJetIndex] << " "
+                      << (*recoJetEta)[recoJetIndex] << " "
+                      << (*recoJetPhi)[recoJetIndex] << " "
+                      << pfCandJets[pfCandJetIndex].pt() << " " 
+                      << pfCandJets[pfCandJetIndex].rap() << " "
+                      << pfCandJets[pfCandJetIndex].phi_std()
+                      << std::endl;
           }
         }
       }
