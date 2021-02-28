@@ -1,14 +1,42 @@
 {
     "FCNN": {
-
+		"data_path" : "./path/to/your/data.txt",
+		"lr" : 1e-4,
+		"epochs" : 10,
+		"batch_size" : 64
     },
+	
+	"classifier": {
+		"data_path" : "./path/to/your/data.txt",
+		"lr" : 1e-4,
+		"epochs" : 10,
+		"batch_size" : 64
+	},
+
     "cWGAN" : {
-        "data_path" : "../../data/processed/newPartonMatchedJets.txt",
-        "weight_saving_interval" : 5,
+        "data_path" : "./path/to/your/data.txt",
+        "weight_saving_interval" : 5000,
         "num_critic_iters" : 5,
         "batch_size" : 64,
-        "noise_dims" : 4,
-        "epochs" : 5,
-        "clip_value" : 0.01
-    }
+        "noise_dims" : 10,
+        "epochs" : 10,
+		"optimizer" : "RMSprop",
+		"gen_lr" : 1e-6,
+		"critic_lr" : 1e-5,
+		"gp_weight" : 10.0,
+		"load_previous" : false,
+		"weights_path" : "./path/to/your/weights/",
+		"iteration" : 0,
+		"data_scaling" : "log"
+    },
+
+	"cGAN" : {
+		"data_path" : "./path/to/your/data.txt",
+		"batch_size" : 64,
+		"noise_dims" : 10,
+		"epochs" : 10,
+		"gen_lr" : 1e-5,
+		"disc_lr" : 1e-5,
+		"weight_saving_interval" : 10
+	}
 }
