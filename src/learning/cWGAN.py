@@ -19,11 +19,10 @@ import sys
 class cWGAN:
     """Class implementing a conditional wasserstein generative adversarial network"""
 
-    def __init__(self, clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous, weights_path, iteration):
+    def __init__(self, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous, weights_path, iteration):
         """Constructor
 
         Args:
-            clip_value (float): Value for weight clipping the critic
             noise_dims (int): Size of noise vector input to the generator
             optimizer (str): Choice of optimizer - either RMSprop or Adam
             gen_lr (float): learning rate of the generator optimizer
@@ -33,7 +32,6 @@ class cWGAN:
             weights_path (path-like): If load_previous is true, path to model weights
             iteration (int): If load_previous is true, the iteration of weights to load
         """
-        self.clip_value = clip_value
         if optimizer == "RMSprop":
             self.critic_optimizer = tf.keras.optimizers.RMSprop(lr=critic_lr)
             self.generator_optimizer = tf.keras.optimizers.RMSprop(lr=gen_lr)
@@ -109,7 +107,7 @@ class cWGAN:
 
     @tf.function
     def generator_loss(self, fake_output):
-        """Estimate the wasserstein loss for the generator
+        """Estimate the Wasserstein loss for the generator
 
         Returns:
             tf.Tensor: Wasserstein loss
@@ -119,26 +117,15 @@ class cWGAN:
         return loss
 
     @tf.function
-    def clip_critic_weights(self):
-        """Clip the weights of the critic to the value set by self.clip_value"""
-        for l in self.critic.layers:
-            new_weights = []
-            for i in range(len(l.weights)):
-                new_weights.append(
-                    tf.clip_by_value(l.weights[i], -self.clip_value, self.clip_value)
-                )
-            l.set_weights(new_weights)
-
-    @tf.function
     def interpolate_data(self, x_real, x_gen, y_real, y_gen):
         """Interpolate between data points as described here: https://arxiv.org/pdf/1704.00028.pdf
 
         The gradient penalty acts on data sampled from straight lines between points in
         the real distribution P_r and the generated distribution P_g, so for points
-        (x, y_real) ~ P_r and (x, y_gen) ~ P_g, we want (note that x remains unchanged)
+        (x_real, y_real) ~ P_r and (x_gen, y_gen) ~ P_g, we want 
 
-        y_new = t*y_gen + (1-t)*y_real
-              = t*(y_gen - y_real) + y_real
+        (x_new, y_new) = t*(x_gen, y_gen) + (1-t)*(x_real, y_real)
+              = t*((x_gen, y_gen) - (x_real, y_real)) + (x_real, y_real)
 
         where t is in (0, 1).
         Args:
@@ -163,7 +150,8 @@ class cWGAN:
         """Calculate the gradient penalty. See here for explantion: https://arxiv.org/pdf/1704.00028.pdf
 
         Args:
-            x (tf.Tensor): Batch of data that the distribution is conditioned on
+            x_real (tf.Tensor): Batch of real data that the distribution is conditioned on
+            x_gen (tf.Tensor): Batch of gen data that the distribution is conditioned on
             y_real (tf.Tensor): Batch of data sampled from real distribution
             y_gen (tf.Tensor): Batch of data sampled from fake distribution
 
@@ -187,11 +175,16 @@ class cWGAN:
 
     @tf.function
     def train_critic(self, x1, y1, x2, y2):
-        """Train critic on one batch of data
+        """Train critic on one batch of data.
+
+        Note that training the critic requires sampling two batches of data from the 
+        joint distribution in order to calculate the gradient penalty.
 
         Args:
-            x (tf.Tensor): Batch of input data generator is conditioned on
-            y (tf.Tensor): Batch of corresponding real output data
+            x1 (tf.Tensor): First batch of input data generator is conditioned on
+            y1 (tf.Tensor): First batch of corresponding real output data
+            x2 (tf.Tensor): Second batch of input data generator is conditioned on
+            y2 (tf.Tensor): Second batch of corresponding real output data
 
         Returns:
             tf.Tensor: Critic loss for the batch
@@ -271,7 +264,6 @@ class Trainer:
         self.batch_size = params_dict["batch_size"]
         gen_lr = params_dict["gen_lr"]
         critic_lr = params_dict["critic_lr"]
-        clip_value = params_dict["clip_value"]
         optimizer = params_dict["optimizer"]
         noise_dims = params_dict["noise_dims"]
         gp_weight = params_dict["gp_weight"]
@@ -280,7 +272,7 @@ class Trainer:
         iteration = params_dict["iteration"]
 
         self.model = cWGAN(
-            clip_value, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous, weights_path, iteration
+            noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous, weights_path, iteration
         )
 
         
@@ -582,14 +574,3 @@ class MNISTTrainer(Trainer):
         fake_output = self.model.critic(concat_fake, training=False)
         wass_estimate = -self.model.critic_loss(real_output, fake_output)
         self.wass_estimates.append(wass_estimate)
-
-
-def main():
-
-    net = cWGAN(0.01, 10)
-    net.generator.summary()
-    net.critic.summary()
-
-
-if __name__ == "__main__":
-    main()
