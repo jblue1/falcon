@@ -217,8 +217,7 @@ def scale_classifier_data(data):
 
 
 def load_classifier_data(data_path):
-    #TODO: Explain what this is doing
-    """[summary]
+    """Load data for classifier
 
     Args:
         data_path ([type]): [description]
@@ -246,9 +245,7 @@ def load_classifier_data(data_path):
 
 
 def main():
-    #test_concatenate_images_labels()
-    load_classifier_data('./data/processed/newPartonMatchedJets.txt')
-
+    test_concatenate_images_labels()
 
 if __name__ == "__main__":
     main()
