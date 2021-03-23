@@ -69,9 +69,9 @@ int main(int argc, char const *argv[]) {
     std::cout << "Incorrect number of arguments" << std::endl;
     return 1;
   }
-   std::ofstream write_out("test-cppflow.txt");
+  std::ofstream write_out("test-cppflow.txt");
   // std::ofstream energy_out("total_energy-cppflow.txt");
-   assert(write_out.is_open());
+  assert(write_out.is_open());
   // assert(energy_out.is_open());
   // load model
   cppflow::model model(
@@ -183,7 +183,6 @@ int main(int argc, char const *argv[]) {
         four_momentum_tensor = cppflow::expand_dims(four_momentum_tensor, 0);
         noise = cppflow::expand_dims(noise, 0);
 
-
         auto output = model({{"serving_default_noiseIn", noise},
                              {"serving_default_pjetIn", four_momentum_tensor}},
                             {"StatefulPartitionedCall:0"});
@@ -192,10 +191,10 @@ int main(int argc, char const *argv[]) {
         std::vector<float> reco_jet =
             unnormalize(data_vec, RECO_MEANS, RECO_STD_DEVS);
 
-        write_out << jetPt << " " << jets[j].rap() << " " << jets[j].phi_std()
-                  << " " << jets[j].E() << " " << reco_jet[0] << " "
-                  << reco_jet[1] << " " << reco_jet[2] << " " << reco_jet[3]
-                  << std::endl;
+        write_out << i << " " << jetPt << " " << jets[j].rap() << " "
+                  << jets[j].phi_std() << " " << jets[j].E() << " "
+                  << reco_jet[0] << " " << reco_jet[1] << " " << reco_jet[2]
+                  << " " << reco_jet[3] << std::endl;
       }
     }
   }
@@ -203,7 +202,7 @@ int main(int argc, char const *argv[]) {
   // Statistics: full printout.
   pythia.stat();
 
-   write_out.close();
+  write_out.close();
   // energy_out.close();
   return 0;
 }
