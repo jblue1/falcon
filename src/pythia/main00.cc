@@ -23,29 +23,58 @@ std::vector<float> RECO_STD_DEVS = {0.3107208060660628, 1.609712071592146,
 std::vector<float> normalize(std::vector<float> four_vec,
                              std::vector<float> mean,
                              std::vector<float> std_dev) {
-  // take base 10 log of pT and E components
-  four_vec[0] = log10(four_vec[0]);
-  four_vec[3] = log10(four_vec[3]);
-
-  // subtract mean and divide by std dev for each component
   for (int i = 0; i < four_vec.size(); i++) {
-    four_vec[i] = (four_vec[i] - mean[i]) / std_dev[i];
+    int index = i % 4;
+
+    if (index == 0 || index == 3) {
+    // take base 10 log of pT and E components
+      four_vec[i] = log10(four_vec[i]);
+    }
+    // subtract mean and divide by std dev for each component
+    four_vec[i] = (four_vec[i] - mean[index]) / std_dev[index];
   }
+
   return four_vec;
 }
 
 std::vector<float> unnormalize(std::vector<float> four_vec,
-                               std::vector<float> mean,
-                               std::vector<float> std_dev) {
-  // multiply by std dev and add mean to each component
+                             std::vector<float> mean,
+                             std::vector<float> std_dev) {
   for (int i = 0; i < four_vec.size(); i++) {
-    four_vec[i] = four_vec[i] * std_dev[i] + mean[i];
+    int index = i % 4;
+    // multiply by std dev and add mean for each component
+    four_vec[i] = four_vec[i] * std_dev[index] + mean[index];
+
+    if (index == 0 || index == 3) {
+    // take base 10 log of pT and E components
+      four_vec[i] = pow(10, four_vec[i]);
+    }
+    
   }
 
-  four_vec[0] = pow(10, four_vec[0]);
-  four_vec[3] = pow(10, four_vec[3]);
-
   return four_vec;
+}
+
+void write_momenta(std::ofstream &stream, std::vector<float> &parton_jet, std::vector<float> &reco_jet, int event) {
+  if (event == 0) {
+    stream << "Parton Jet Pt | Reco Jet Pt | Parton Jet Eta | Reco Jet Eta | Parton Jet Phi | Reco Jet Phi | Parton Jet E | Reco Jet E" << std::endl;
+  }
+  for (int i = 0; i < reco_jet.size(); i++) {
+    int index = i % 4;
+    if (index == 0) {
+      stream << event << " ";
+    }
+
+    stream << parton_jet[i] << " " << reco_jet[i];
+
+    if (index == 3) {
+      stream << std::endl;
+    }
+    else {
+      stream << " ";
+    }
+    
+  }
 }
 
 // Set up random number generator
@@ -73,6 +102,7 @@ int main(int argc, char const *argv[]) {
   // std::ofstream energy_out("total_energy-cppflow.txt");
   assert(write_out.is_open());
   // assert(energy_out.is_open());
+  
   // load model
   cppflow::model model(
       "/home/DAVIDSON/joblue/phy2/falcon/models/cWGAN/Run_2021-03-09_0/model");
@@ -120,7 +150,6 @@ int main(int argc, char const *argv[]) {
     pythia.next();
 
     int numParticles = pythia.event.size();
-    // std::cout << "Number of Particles: " << numParticles << std::endl;
 
     float totalE = 0.0;
     std::vector<PseudoJet> particles;
@@ -144,8 +173,7 @@ int main(int argc, char const *argv[]) {
             id == 5101 || id == 5103 || id == 5201 || id == 5203 ||
             id == 5301 || id == 5303 || id == 5401 || id == 5403 ||
             id == 5503) {
-          // std::cout << "Particle ID: " << p.id() << " Status: " << status
-          //       << " Pt: " << p.pT() << " Energy: " << p.e() << std::endl;
+
           totalE += p.e();
           particles.push_back(PseudoJet(p.px(), p.py(), p.pz(), p.e()));
         } else if (id > 22 || id < -22) {
@@ -161,42 +189,39 @@ int main(int argc, char const *argv[]) {
     ClusterSequence cs(particles, jet_def);
 
     std::vector<PseudoJet> jets = cs.inclusive_jets();
+    int num_jets = 0;
 
+    std::vector<float> parton_jet_momenta;
     for (int j = 0; j < jets.size(); j++) {
-      float jetPt = jets[j].pt();
-      float jetEta = jets[j].rap();
-      float jetPhi = jets[j].phi_std();
-      float jetE = jets[j].E();
-      if (jetPt > 20) {
-        // std::cout << "Jet Pt: " << jetPt << std::endl;
-
-        std::vector<float> rand = sample_rand_vec(10);
-        cppflow::tensor noise =
-            cppflow::tensor({{rand[0], rand[1], rand[2], rand[3], rand[4],
-                              rand[5], rand[6], rand[7], rand[8], rand[9]}});
-
-        std::vector<float> four_momentum = {jetPt, jetEta, jetPhi, jetE};
-        four_momentum = normalize(four_momentum, PARTON_MEANS, PARTON_STD_DEVS);
-        cppflow::tensor four_momentum_tensor =
-            cppflow::tensor({four_momentum[0], four_momentum[1],
-                             four_momentum[2], four_momentum[3]});
-        four_momentum_tensor = cppflow::expand_dims(four_momentum_tensor, 0);
-        noise = cppflow::expand_dims(noise, 0);
-
-        auto output = model({{"serving_default_noiseIn", noise},
-                             {"serving_default_pjetIn", four_momentum_tensor}},
-                            {"StatefulPartitionedCall:0"});
-        cppflow::tensor *data = output.data();
-        std::vector<float> data_vec = data->get_data<float>();
-        std::vector<float> reco_jet =
-            unnormalize(data_vec, RECO_MEANS, RECO_STD_DEVS);
-
-        write_out << i << " " << jetPt << " " << jets[j].rap() << " "
-                  << jets[j].phi_std() << " " << jets[j].E() << " "
-                  << reco_jet[0] << " " << reco_jet[1] << " " << reco_jet[2]
-                  << " " << reco_jet[3] << std::endl;
+      float partonJetPt = jets[j].pt();
+      float partonJetEta = jets[j].rap();
+      float partonJetPhi = jets[j].phi_std();
+      float partonJetE = jets[j].E();
+      if (partonJetPt > 20) {
+        parton_jet_momenta.push_back(partonJetPt);
+        parton_jet_momenta.push_back(partonJetEta);
+        parton_jet_momenta.push_back(partonJetPhi);
+        parton_jet_momenta.push_back(partonJetE);
+        num_jets++;
       }
     }
+
+    const std::vector<float> rand = sample_rand_vec(10*num_jets);
+    const std::vector<int64_t> rand_shape = {num_jets, 10};
+    const std::vector<int64_t> jets_shape = {num_jets, 4};
+
+    std::vector<float> normalized_parton_jet_momenta = normalize(parton_jet_momenta, PARTON_MEANS, PARTON_STD_DEVS);
+
+    cppflow::tensor noise = cppflow::tensor(rand, rand_shape);
+    cppflow::tensor jets_tensor = cppflow::tensor(normalized_parton_jet_momenta, jets_shape);
+    auto output = model({{"serving_default_noiseIn", noise},
+                             {"serving_default_pjetIn", jets_tensor}},
+                            {"StatefulPartitionedCall:0"});
+    cppflow::tensor *data = output.data();
+    std::vector<float> data_vec = data->get_data<float>();
+    std::vector<float> reco_jet_momenta = unnormalize(data_vec, RECO_MEANS, RECO_STD_DEVS);
+ 
+    write_momenta(write_out, parton_jet_momenta, reco_jet_momenta, i);
   }
 
   // Statistics: full printout.
