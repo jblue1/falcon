@@ -109,6 +109,32 @@ def load_jet_data_log_scaling(data_path):
     return (parton_data, reco_data)
 
 
+def load_jet_data_log_scaling_cartesian(data_path):
+    """Load and normalize the jet data with four momenta given as 
+    (px, py, pz, E).
+
+    Scale E by taking the log
+    Args:
+        data_path (path-like): path to txt file with jet 4-momenta
+
+    Returns:
+        tuple: tuple of ndarrays (parton_data, reco_data)
+    """
+    data = np.loadtxt(data_path, skiprows=2, dtype=np.float32)
+    np.log10(data[:, 3], out=data[:, 3])
+    np.log10(data[:, 7], out=data[:, 7])
+    
+    mean = np.mean(data, axis=0)
+    std = np.std(data, axis=0)
+    
+    data = (data - mean) / std
+
+    np.random.shuffle(data)
+    parton_data = data[:, :4]
+    reco_data = data[:, 4:]
+    return (parton_data, reco_data)
+
+
 def one_hot_encode(number):
     """Return a one-hot-encoded vector to serve as a label for MNIST data.
 
