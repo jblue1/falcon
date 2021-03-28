@@ -62,7 +62,7 @@ int main(int arc, char const *argv[])
 
     int numEvents = tree->GetEntries();
 
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < numEvents; i++)
     {
         tree->GetEntry(i);
 
