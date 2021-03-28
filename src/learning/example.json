@@ -27,6 +27,7 @@
 		"load_previous" : false,
 		"weights_path" : "./path/to/your/weights/",
 		"iteration" : 0,
+		"data_type" : "angular",
 		"data_scaling" : "log"
     },
 
