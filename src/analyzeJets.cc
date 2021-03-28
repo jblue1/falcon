@@ -212,8 +212,6 @@ int main(int argc, char const *argv[])
         std::vector<PseudoJet> particles;
         for (int j = 0; j < numPartons; j++)
         {
-            if ((*partonStatus)[j] == 71)
-            {
                 particles.push_back(PseudoJet((*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
                 partonPxTot += (*partonPx)[j];
                 partonPyTot += (*partonPy)[j];
@@ -227,8 +225,8 @@ int main(int argc, char const *argv[])
                                     << (*partonEta)[j] << " "
                                     << (*partonPhi)[j] << " "
                                     << (*partonE)[j] << std::endl;
-            }
         }
+        std::cout << partonETot << std::endl;
 
         int numHadrons = hadronPx->size();
         float hadronPxTot = 0;
