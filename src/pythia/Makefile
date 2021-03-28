@@ -59,8 +59,8 @@ $(PYTHIA):
                 in the top PYTHIA directory)
 
 # Examples without external dependencies.
-main%: $(PYTHIA) main%.cc
-	$(CXX) $@.cc -o $@ $(CXX_COMMON)
+main%.out: main%.cc $(PYTHIA)
+	$(CXX) $< -o $@ $(CXX_COMMON)
 
 # MixMax (remove warnings).
 main23: $(PYTHIA) main23.cc
