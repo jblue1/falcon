@@ -277,17 +277,26 @@ class Trainer:
 
         
         data_path = params_dict["data_path"]
-        if params_dict["data_scaling"] == "inverse":
-            self.data = data_utils.load_jet_data_inverse_scaling(data_path)
-        elif params_dict["data_scaling"] == "log":
-            self.data = data_utils.load_jet_data_log_scaling(data_path)
-        elif params_dict["data_scaling"] == "minmax":
-            self.data = data_utils.load_jet_data(data_path)
+        if params_dict["data_type"] == "angular":
+            if params_dict["data_scaling"] == "inverse":
+                self.data = data_utils.load_jet_data_inverse_scaling(data_path)
+            elif params_dict["data_scaling"] == "log":
+                self.data = data_utils.load_jet_data_log_scaling(data_path)
+            elif params_dict["data_scaling"] == "minmax":
+                self.data = data_utils.load_jet_data(data_path)
+            else:
+                print("There was an error loading the data")
+                print(
+                    "Please specify a data scaling scheme in your configuration file: The options are: inverse, log, and minmax"
+                )
+                sys.exit(1)
+        elif params_dict["data_type"] == "cartesian":
+            self.data = data_utils.load_jet_data_log_scaling_cartesian(data_path)
         else:
             print("There was an error loading the data")
-            print(
-                "Please specify a data scaling scheme in your configuration file: The options are: inverse, log, and minmax"
-            )
+            print("Please specify the form of the data your are training on, either:")
+            print("    angular: Four-momenta in form (Pt, Eta, Phi, E)")
+            print("    cartesian: Four-momenta in form (Px, Py, Pz, E)")
             sys.exit(1)
 
         self.epochs = params_dict["epochs"]
