@@ -22,7 +22,7 @@ old/
 # mac stuff
 *.DS_Store
 
-# config files
+# config and SLURM files
 *cfg.json
 *batch.sh
 
