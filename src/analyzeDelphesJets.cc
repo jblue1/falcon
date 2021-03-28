@@ -38,7 +38,7 @@ std::vector<PseudoJet> cluster_jets(std::vector<Float_t> *px,
 }
 
 int main(int argc, char const *argv[]) {
-  std::ofstream write_out("test_CMS_Default_Card_R0-4.txt");
+  std::ofstream write_out("test.txt");
   assert(write_out.is_open());
 
   write_out
@@ -111,8 +111,12 @@ int main(int argc, char const *argv[]) {
 
   assert(numberOfCMSSWEvents == numberOfDelphesEvents);
 
-  for (int i = 0; i < numberOfCMSSWEvents; i++) {
+  for (int i = 0; i < numberOfDelphesEvents; i++) {
     partonTree->GetEntry(i);
+    treeReader->ReadEntry(i);
+    int delphesRecoJetEntries = branchRecoJet->GetEntries();
+    int delphesGenJetEntries = branchGenJet->GetEntries();
+
 
     std::vector<PseudoJet> partonJets =
         cluster_jets(partonPx, partonPy, partonPz, partonE);
@@ -124,9 +128,6 @@ int main(int argc, char const *argv[]) {
       // loop through parton jets looking for matches
 
       for (int j = 0; j < partonJets.size(); j++) {
-        treeReader->ReadEntry(i);
-        int delphesRecoJetEntries = branchRecoJet->GetEntries();
-        int delphesGenJetEntries = branchGenJet->GetEntries();
 
         if (partonJets[j].pt() > 20) {
           float minDRDelphesRecoJet = 10.0;
