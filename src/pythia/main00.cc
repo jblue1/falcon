@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <random>
+#include <cassert>
 
 using namespace Pythia8;
 using namespace fastjet;
@@ -54,19 +55,27 @@ std::vector<float> unnormalize(std::vector<float> four_vec,
   return four_vec;
 }
 
-void write_momenta(std::ofstream &stream, std::vector<float> &parton_jet,
+void write_momenta(std::ofstream &stream, std::vector<int> &events, std::vector<float> &parton_jet,
                    std::vector<float> &reco_jet) {
 
+  int jet_number = 0;
   for (int i = 0; i < reco_jet.size(); i++) {
     int index = i % 4;
+    
 
+    if (index == 0) {
+      stream << events[jet_number] << " ";
+    }
 
+    
     stream << parton_jet[i] << " " << reco_jet[i];
 
     if (index == 3) {
       stream << std::endl;
+      jet_number++;
     } else {
       stream << " ";
+      
     }
   }
 }
@@ -81,7 +90,6 @@ std::vector<float> sample_rand_vec(int size) {
   std::uniform_real_distribution<double> distribution(0.0, 1.0);
   for (int i = 0; i < size; i++) {
     double number = distribution(generator);
-    // std::cout << "Rand Number: " << number << std::endl;
     output.push_back(number);
   }
   return output;
@@ -123,8 +131,8 @@ int main(int argc, char const *argv[]) {
   pythia.readString("MultipartonInteractions:pT0Ref = 2.4024");
 
   // Common Settings
-  pythia.readString("Tune:preferLHAPDF = 0");
-  pythia.readString("Next:numberShowEvent = 0");
+  pythia.readString("Tune:preferLHAPDF = 2");
+  pythia.readString("Next:numberShowEvent = 2");
   pythia.readString("Check:epTolErr = 0.010");
   pythia.readString("ParticleDecays:limitTau0 = on");
   pythia.readString("ParticleDecays:tau0Max = 10");
@@ -140,6 +148,8 @@ int main(int argc, char const *argv[]) {
   int num_jets = 0;
 
   std::vector<float> parton_jet_momenta;
+
+  std::vector<int> events;
 
   // Loop over events.
   for (int i = 0; i < numEvents; ++i) {
@@ -198,6 +208,7 @@ int main(int argc, char const *argv[]) {
         parton_jet_momenta.push_back(partonJetEta);
         parton_jet_momenta.push_back(partonJetPhi);
         parton_jet_momenta.push_back(partonJetE);
+        events.push_back(i);
         num_jets++;
       }
     }
@@ -220,7 +231,7 @@ int main(int argc, char const *argv[]) {
   std::vector<float> reco_jet_momenta =
       unnormalize(data_vec, RECO_MEANS, RECO_STD_DEVS);
 
-  write_momenta(write_out, parton_jet_momenta, reco_jet_momenta);
+  write_momenta(write_out, events, parton_jet_momenta, reco_jet_momenta);
 
   // Statistics: full printout.
   pythia.stat();
