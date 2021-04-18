@@ -47,7 +47,8 @@ int main(int argc, char const *argv[]) {
       << std::endl;
   write_out
       << "Parton Pt | Parton Eta | Parton Phi | Delphes Reco Pt | Delphes Reco "
-         "Eta | Delphes Reco Phi | Gen Pt | Gen Eta | Gen Phi | Reco Pt | Reco Eta |"
+         "Eta | Delphes Reco Phi | Gen Pt | Gen Eta | Gen Phi | Reco Pt | Reco "
+         "Eta |"
          " Reco Phi | PfCand Pt | PfCand Eta | PfCand Phi"
       << std::endl;
 
@@ -117,10 +118,9 @@ int main(int argc, char const *argv[]) {
     int delphesRecoJetEntries = branchRecoJet->GetEntries();
     int delphesGenJetEntries = branchGenJet->GetEntries();
 
-
     std::vector<PseudoJet> partonJets =
         cluster_jets(partonPx, partonPy, partonPz, partonE);
-    
+
     std::vector<PseudoJet> pfCandJets =
         cluster_jets(pfCandPx, pfCandPy, pfCandPz, pfCandE);
 
@@ -145,7 +145,6 @@ int main(int argc, char const *argv[]) {
           float minDRPfCandJet = 10.0;
           int pfCandJetIndex = 0;
 
-
           for (int k = 0; k < delphesRecoJetEntries; k++) {
             Jet *jet = (Jet *)branchRecoJet->At(k);
             float dR = deltaR(jet->Eta, jet->Phi, partonJets[j].rap(),
@@ -154,29 +153,6 @@ int main(int argc, char const *argv[]) {
             if (dR < minDRDelphesRecoJet) {
               minDRDelphesRecoJet = dR;
               delphesRecoJetIndex = k;
-            }
-          }
-
-          for (int k = 0; k < delphesGenJetEntries; k++) {
-            Jet *jet = (Jet *)branchGenJet->At(k);
-            float dR = deltaR(jet->Eta, jet->Phi, partonJets[j].rap(),
-                              partonJets[j].phi_std());
-
-            if (dR < minDRDelphesGenJet) {
-              minDRDelphesGenJet = dR;
-              delphesGenJetIndex = k;
-            }
-          }
-
-          for (int k = 0; k < genJetPt->size(); k++) {
-            if ((*genJetPt)[k] > 10.0) {
-              float dR = deltaR((*genJetEta)[k], (*genJetPhi)[k],
-                                partonJets[j].rap(), partonJets[j].phi_std());
-
-              if (dR < minDRGenJet) {
-                minDRGenJet = dR;
-                genJetIndex = k;
-              }
             }
           }
 
@@ -192,42 +168,20 @@ int main(int argc, char const *argv[]) {
             }
           }
 
-          for (int k = 0; k < pfCandJets.size(); k++) {
-            if (pfCandJets[k].pt() > 10.0) {
-              float dR = deltaR(pfCandJets[k].rap(), pfCandJets[k].phi_std(),
-                                partonJets[j].rap(), partonJets[j].phi_std());
-
-              if (dR < minDRPfCandJet) {
-                minDRPfCandJet = dR;
-                pfCandJetIndex = k;
-              }
-            }
-          }
-
-          if (minDRDelphesRecoJet < 0.35 && minDRGenJet < 0.35 &&
-              minDRDelphesGenJet < 0.35 && minDRRecoJet < 0.35 && minDRPfCandJet < 0.35) {
+          if (minDRDelphesRecoJet < 0.35 && minDRRecoJet < 0.35) {
             Jet *matchedDelphesRecoJet =
                 (Jet *)branchRecoJet->At(delphesRecoJetIndex);
             Jet *matchedDelphesGenJet =
                 (Jet *)branchGenJet->At(delphesGenJetIndex);
             write_out << partonJets[j].pt() << " " << partonJets[j].rap() << " "
                       << partonJets[j].phi_std() << " "
+                      << partonJets[j].e() << " "
                       << matchedDelphesRecoJet->PT << " "
                       << matchedDelphesRecoJet->Eta << " "
                       << matchedDelphesRecoJet->Phi << " "
-                      << (*genJetPt)[genJetIndex] << " "
-                      << (*genJetEta)[genJetIndex] << " "
-                      << (*genJetPhi)[genJetIndex] << " "
-                      << matchedDelphesGenJet->PT << " "
-                      << matchedDelphesGenJet->Eta << " "
-                      << matchedDelphesGenJet->Phi << " "
                       << (*recoJetPt)[recoJetIndex] << " "
                       << (*recoJetEta)[recoJetIndex] << " "
-                      << (*recoJetPhi)[recoJetIndex] << " "
-                      << pfCandJets[pfCandJetIndex].pt() << " " 
-                      << pfCandJets[pfCandJetIndex].rap() << " "
-                      << pfCandJets[pfCandJetIndex].phi_std()
-                      << std::endl;
+                      << (*recoJetPhi)[recoJetIndex] << " " << std::endl;
           }
         }
       }
