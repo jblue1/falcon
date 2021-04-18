@@ -16,7 +16,8 @@
 
 # Set the shell.
 SHELL=/usr/bin/env bash
-PYTHIAROOT=/home/DAVIDSON/joblue/phy2/pythia8303/
+PYTHIAROOT=/home/DAVIDSON/joblue/Pythia/pythia8230
+#PYTHIAROOT=/home/DAVIDSON/joblue/phy2/pythia8303/
 FASTJETFLAGS = `$(FASTJETSYS)/bin/fastjet-config --cxxflags --libs --plugins`
 TENSORFLOWFLAGS = -I /home/DAVIDSON/joblue/libtensorflow2/include -ltensorflow
 CPPFLOWFLAGS = -I /home/DAVIDSON/joblue/phy2/cppflow/include
@@ -24,6 +25,13 @@ CPPFLOWFLAGS = -I /home/DAVIDSON/joblue/phy2/cppflow/include
 
 # Include the configuration.
 -include $(PYTHIAROOT)/examples/Makefile.inc
+
+#GZIP_INC=
+#GZIP_FLAGS=
+#ifeq ($(GZIP_USE),true)
+#  GZIP_INC+= -DGZIPSUPPORT -I$(GZIP_INCLUDE)
+#  GZIP_FLAGS+= -L$(GZIP_LIB) -Wl,-rpath,$(GZIP_LIB) -lz
+#endif
 
 # Check distribution (use local version first, then installed version).
 #ifneq ("$(wildcard ../lib/libpythia8.*)","")
@@ -39,7 +47,7 @@ CXX_COMMON:=-I$(PREFIX_INCLUDE) $(CXX_COMMON) $(GZIP_LIB)
 CXX_COMMON+=-L$(PREFIX_LIB) -Wl,-rpath,$(PREFIX_LIB) -lpythia8 -ldl
 CXX_COMMON+=$(FASTJETFLAGS) $(TENSORFLOWFLAGS) --std=c++17
 CXX_COMMON+=$(CPPFLOWFLAGS) 
-PYTHIA=$(PREFIX_LIB)/libpythia8$(LIB_SUFFIX)
+PYTHIA=$(PREFIX_LIB)/libpythia8.a# $(LIB_SUFFIX)
 
 ################################################################################
 # RULES: Definition of the rules used to build the PYTHIA examples.
@@ -59,8 +67,8 @@ $(PYTHIA):
                 in the top PYTHIA directory)
 
 # Examples without external dependencies.
-main%.out: main%.cc $(PYTHIA)
-	$(CXX) $< -o $@ $(CXX_COMMON)
+main%: $(PYTHIA) main%.cc
+	$(CXX) $@.cc -o $@ $(CXX_COMMON)
 
 # MixMax (remove warnings).
 main23: $(PYTHIA) main23.cc
