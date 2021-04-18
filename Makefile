@@ -22,9 +22,9 @@ angularData :
 	./bin/writeJetMomentaAngular.out newPartonEvents.root newPartonMatchedJetsNoRecoPtCut.txt
 
 cartesianData : 
-	./bin/writeJetMomentaCartesian.out newPartonEvents.root newPartonMatchedJetsNoRecoPtCutCartesian.txt
+	./bin/writeJetMomentaCartesian.out newPartonEventsFixedZCoord.root testingforPt25Jets.txt
 	
 delphes :
-	./bin/analyzeDelphesJets.out ~/test/Delphes/default_CMS_card.root ./data/raw/newPartonEventswPFCands.root
+	./bin/analyzeDelphesJets.out /home/DAVIDSON/joblue/CMSSW_10_2_24/src/analyzer/MyAnalyzer/Delphes/adjusted_delphes_card_CMS.root ./data/raw/newPartonEventswPFCands.root
 
 .PHONY: angularData cartesianData histos delphes
