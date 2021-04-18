@@ -57,8 +57,8 @@ int main(int argc, char const *argv[]) {
   pythia.readString("MultipartonInteractions:pT0Ref = 2.4024");
 
   // Common Settings
-  pythia.readString("Tune:preferLHAPDF = 0");
-  pythia.readString("Next:numberShowEvent = 0");
+  pythia.readString("Tune:preferLHAPDF = 2");
+  pythia.readString("Next:numberShowEvent = 2");
   pythia.readString("Check:epTolErr = 0.010");
   pythia.readString("ParticleDecays:limitTau0 = on");
   pythia.readString("ParticleDecays:tau0Max = 10");
@@ -66,6 +66,11 @@ int main(int argc, char const *argv[]) {
   pythia.readString("SLHA:minMassSM = 1000.");
   // pythia.readString("SLHA:keepSM = on");
   pythia.readString("Beams:setProductionScalesFromLHEF = off");
+
+  // other settings
+  pythia.readString("JetMatching:setMad = off");
+  pythia.readString("Random:setSeed = on");
+  pythia.readString("Random:seed = 1");
 
   // Turn off hadronization
  // pythia.readString("HadronLevel:all = off");
