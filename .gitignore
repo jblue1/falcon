@@ -3,11 +3,14 @@ data/
 models/
 *.png
 *.pdf
+*.log
+*.lhe
 
 # executables
 *.out
 *pycache*
 *.pyc
+*main0*
 
 #notebook checkpoints
 *.ipynb_checkpoints
