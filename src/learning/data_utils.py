@@ -96,7 +96,9 @@ def load_jet_data_log_scaling(data_path):
     np.log10(data[:, 0], out=data[:, 0])
     np.log10(data[:, 3], out=data[:, 3])
     np.log10(data[:, 4], out=data[:, 4])
-    np.log10(data[:, 7], out=data[:, 7])
+    np.log10(data[:, 5], out=data[:, 5])
+    np.log10(data[:, 8], out=data[:, 8])
+    np.log10(data[:, 9], out=data[:, 9])
     
     mean = np.mean(data, axis=0)
     std = np.std(data, axis=0)
@@ -104,8 +106,8 @@ def load_jet_data_log_scaling(data_path):
     data = (data - mean) / std
 
     np.random.shuffle(data)
-    parton_data = data[:, :4]
-    reco_data = data[:, 4:]
+    parton_data = data[:, :5]
+    reco_data = data[:, 5:]
     return (parton_data, reco_data)
 
 
