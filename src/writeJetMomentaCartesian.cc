@@ -1,6 +1,6 @@
 /*
  * This program makes jets out of partons present in the dataset, runs matching
- * between the parton and reco level jets, and then writes out the 4-momenta of
+ * between the parton and reco level jets, and then writes out the 4-momenta (in cartesian coordinates) of
  * the matched jets in a text file
  */
 

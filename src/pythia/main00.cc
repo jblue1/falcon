@@ -21,6 +21,10 @@ std::vector<float> RECO_MEANS = {1.6574159582302348, -4.4009885497273684e-03,
 std::vector<float> RECO_STD_DEVS = {0.3107208060660628, 1.609712071592146,
                                     1.8132994467877084, 0.4030490622744889};
 
+/**
+ * Normalize a set of four-momenta so each component has
+ * a mean of zero a variance of one
+ */
 std::vector<float> normalize(std::vector<float> four_vec,
                              std::vector<float> mean,
                              std::vector<float> std_dev) {
@@ -38,6 +42,10 @@ std::vector<float> normalize(std::vector<float> four_vec,
   return four_vec;
 }
 
+/**
+ * Take data set of four-momenta with mean of zero and variance 
+ * of one and scale them back to original distribution
+ */
 std::vector<float> unnormalize(std::vector<float> four_vec,
                                std::vector<float> mean,
                                std::vector<float> std_dev) {
@@ -55,6 +63,9 @@ std::vector<float> unnormalize(std::vector<float> four_vec,
   return four_vec;
 }
 
+/**
+ * Write matched parton and reco jet four momenta to a text file
+ */
 void write_momenta(std::ofstream &stream, std::vector<int> &events, std::vector<float> &parton_jet,
                    std::vector<float> &reco_jet) {
 
@@ -84,6 +95,9 @@ void write_momenta(std::ofstream &stream, std::vector<int> &events, std::vector<
 unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 std::default_random_engine generator(seed);
 
+/**
+ * Sample a vector of a given length from a uniform distribution
+ */
 std::vector<float> sample_rand_vec(int size) {
   std::vector<float> output;
 

@@ -6,6 +6,7 @@ import os
 
 
 def make_model():
+    """Create fully connected neural network"""
     model = keras.Sequential()
     model.add(keras.Input(shape=(4,)))
     model.add(keras.layers.Dense(128, activation="relu"))
@@ -18,6 +19,8 @@ def make_model():
 
 
 class Trainer:
+    """Class for training FCNN"""
+
     def __init__(self, params_dict):
         self.save_dir = file_utils.make_save_directory("FCNN")
         self.model = make_model()
