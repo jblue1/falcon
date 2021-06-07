@@ -10,7 +10,7 @@ def load_jet_data(data_path):
 
     For each 4-momentum, scale Pt and E by subtracting the min and
     dividing by the max (i.e scale to [0, 1]), and scale eta and phi
-    by subtracting by the mean and dividing by the std deviation 
+    by subtracting by the mean and dividing by the std deviation
     (i.e scale to mean of 0 and unit variance)
     Args:
         data_path (path-like): path to txt file with jet 4-momenta
@@ -51,7 +51,7 @@ def load_jet_data_inverse_scaling(data_path):
 
     For Pt and E, instead of scaling to [0, 1] by subtracting the min and adding the max,
     this function scales each by 1/Pt (or 1/E), and then multiplies by 1/min to get the
-    distribution to go from 0 to 1. 
+    distribution to go from 0 to 1.
     Args:
         data_path (path-like): path to txt file with jet 4-momenta
 
@@ -69,12 +69,12 @@ def load_jet_data_inverse_scaling(data_path):
     pfPtMin = np.min(data[:, 4], axis=0)
     pfEMin = np.min(data[:, 7], axis=0)
 
-    data[:, 0] = (1/data[:, 0]) * partonPtMin
+    data[:, 0] = (1 / data[:, 0]) * partonPtMin
     data[:, 1:3] = (data[:, 1:3] - partonMean) / partonStd
-    data[:, 3] = (1/data[:, 3]) * partonEMin
-    data[:, 4] = (1/data[:, 4]) * pfPtMin
+    data[:, 3] = (1 / data[:, 3]) * partonEMin
+    data[:, 4] = (1 / data[:, 4]) * pfPtMin
     data[:, 5:7] = (data[:, 5:7] - pfMean) / pfStd
-    data[:, 7] = (1/data[:, 7]) * pfEMin
+    data[:, 7] = (1 / data[:, 7]) * pfEMin
 
     np.random.shuffle(data)
     parton_data = data[:, :4]
@@ -85,7 +85,9 @@ def load_jet_data_inverse_scaling(data_path):
 def load_jet_data_log_scaling(data_path):
     """Load and normalize the jet data
 
-    Scale Pt and E by taking the log
+    Scale Pt, E, and P by taking the log. Note that P and E are
+    normalized with the same scale so that they can be used
+    to calculate the mass as part of the loss function.
     Args:
         data_path (path-like): path to txt file with jet 4-momenta
 
@@ -99,10 +101,17 @@ def load_jet_data_log_scaling(data_path):
     np.log10(data[:, 5], out=data[:, 5])
     np.log10(data[:, 8], out=data[:, 8])
     np.log10(data[:, 9], out=data[:, 9])
-    
+
     mean = np.mean(data, axis=0)
     std = np.std(data, axis=0)
-    
+
+    # Scale the energy and momentum with the same mean and std
+    mean[4] = mean[3]
+    std[4] = std[3]
+
+    mean[9] = mean[8]
+    std[9] = std[8]
+
     data = (data - mean) / std
 
     np.random.shuffle(data)
@@ -112,7 +121,7 @@ def load_jet_data_log_scaling(data_path):
 
 
 def load_jet_data_log_scaling_cartesian(data_path):
-    """Load and normalize the jet data with four momenta given as 
+    """Load and normalize the jet data with four momenta given as
     (px, py, pz, E).
 
     Scale E by taking the log
@@ -125,10 +134,10 @@ def load_jet_data_log_scaling_cartesian(data_path):
     data = np.loadtxt(data_path, skiprows=2, dtype=np.float32)
     np.log10(data[:, 3], out=data[:, 3])
     np.log10(data[:, 7], out=data[:, 7])
-    
+
     mean = np.mean(data, axis=0)
     std = np.std(data, axis=0)
-    
+
     data = (data - mean) / std
 
     np.random.shuffle(data)
@@ -219,9 +228,9 @@ def test_concatenate_images_labels():
 
 def gaussian_fit(x):
     """Given a parton jet pt (x), return g(y | x) ie the conditional density
-    of the reco jet pt (y) given x. 
+    of the reco jet pt (y) given x.
 
-    The hardcoded values came from doing linear fits on the mean of g(y|x) and 
+    The hardcoded values came from doing linear fits on the mean of g(y|x) and
     the square root of the stdDev of g(y|x), see the notebook "DensityEstimation.ipynb"
     to see where these values came from.
 
@@ -232,15 +241,15 @@ def gaussian_fit(x):
     INTERCEPT_mean = 1.650221590
     SLOPE_stdDev = 0.01101888
     INTERCEPT_stdDev = 2.92408837
-    mean = SLOPE_mean*x + INTERCEPT_mean
-    stdDev = (SLOPE_stdDev*x + INTERCEPT_stdDev)**2
+    mean = SLOPE_mean * x + INTERCEPT_mean
+    stdDev = (SLOPE_stdDev * x + INTERCEPT_stdDev) ** 2
 
     return mean, stdDev
 
 
 def scale_classifier_data(data):
-    data[:, 0] = (1/data[:, 0])
-    data[:, 1] = (1/data[:, 1])
+    data[:, 0] = 1 / data[:, 0]
+    data[:, 1] = 1 / data[:, 1]
     return data
 
 
@@ -254,10 +263,10 @@ def load_classifier_data(data_path):
         [type]: [description]
     """
     data = np.loadtxt(data_path, skiprows=2, dtype=np.float32)
-    split = int(0.8*len(data))
+    split = int(0.8 * len(data))
     partonPt = data[:split, 0:1]
     recoPt = data[:split, 4:5]
-    half = int(len(partonPt)/2)
+    half = int(len(partonPt) / 2)
     T1_partonPt = partonPt[:half, :]
     T1_recoPt = recoPt[:half, :]
     T1_labels = np.ones((T1_partonPt.shape), dtype=np.float32)
@@ -274,6 +283,7 @@ def load_classifier_data(data_path):
 
 def main():
     test_concatenate_images_labels()
+
 
 if __name__ == "__main__":
     main()
