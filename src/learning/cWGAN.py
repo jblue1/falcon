@@ -209,6 +209,13 @@ class cWGAN:
         return critic_loss_val
 
     @tf.function
+    def mass_loss(self, x, y):
+        pred_mass_squared = y[:, 3]**2 - y[:, 4]**2
+        true_mass_squared = x[:, 3]**2 - x[:, 4]**2
+
+        return (pred_mass_squared - true_mass_squared)**2
+    
+    @tf.function
     def train_generator(self, x, y):
         """Train generator on one batch of data
 
@@ -224,7 +231,7 @@ class cWGAN:
         with tf.GradientTape() as tape:
             predicted_y = self.generator([x, noise], training=True)
             fake_output = self.critic([x, predicted_y], training=False)
-            generator_loss = 0.95*self.generator_loss(fake_output) + 0.05*keras.losses.MSE(y, predicted_y)
+            generator_loss = 0.25*self.generator_loss(fake_output) + 0.75*self.mass_loss(y, predicted_y)
 
         generator_grads = tape.gradient(
             generator_loss, self.generator.trainable_variables
