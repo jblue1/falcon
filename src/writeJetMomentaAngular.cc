@@ -1,7 +1,9 @@
 /*
  * This program makes jets out of partons present in the dataset, runs matching
  * between the parton and reco level jets, and then writes out the 4-momenta (in
- * angular coordinates) of the matched jets in a text file
+ * angular coordinates) of the matched jets in a text file. The last command line
+ * arguement sets the bool leadingJetsOnly. If true, only the two highest Pt jets 
+ * in an event will be considered for matching. 
  */
 
 #include "TFile.h"
@@ -17,9 +19,14 @@ using namespace fastjet;
 int main(int arc, char const *argv[]) {
   std::string dataFile(argv[1]);
   std::string txtFile(argv[2]);
+  bool leadingJetsOnly = atoi(argv[3]);
   std::string dataPath = "./data/raw/" + dataFile;
   std::string txtPath = "./data/processed/" + txtFile;
 
+  if (leadingJetsOnly) {
+    txtPath.insert(txtPath.size() - 4, "LeadingJetsOnly");
+  }
+  std::cout << txtPath << std::endl;
   TFile f(dataPath.c_str());
   TDirectoryFile *df = (TDirectoryFile *)f.Get("demo");
   TTree *tree = (TTree *)df->Get("eventTree");
@@ -85,9 +92,12 @@ int main(int arc, char const *argv[]) {
     ClusterSequence cs(partons, jet_def);
 
     std::vector<PseudoJet> partonJets = cs.inclusive_jets();
+    std::reverse(partonJets.begin(), partonJets.end());
+    int numJets = partonJets.size();
 
-    if (partonJets.size() > 0) {
-      for (size_t j = 0; j < partonJets.size(); j++) {
+    if (numJets > 0) {
+      if (numJets > 2 && leadingJetsOnly) numJets = 2;
+      for (size_t j = 0; j < numJets; j++) {
         if (partonJets[j].pt() > 20) {
           float minDRPfJet = 10.0;
           int pfJetIndex = 0;
