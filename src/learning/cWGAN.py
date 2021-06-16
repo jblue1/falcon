@@ -19,7 +19,7 @@ import sys
 class cWGAN:
     """Class implementing a conditional wasserstein generative adversarial network"""
 
-    def __init__(self, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous, weights_path, iteration):
+    def __init__(self, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, mass_loss_prop, load_previous, weights_path, iteration):
         """Constructor
 
         Args:
@@ -28,6 +28,7 @@ class cWGAN:
             gen_lr (float): learning rate of the generator optimizer
             critic_lr (float): learning rate of the critic optimizer
             gp_weight (float): Weight for the gradient penalty in the loss function
+            mass_loss_prop (float): Proportion of loss to be from the mass loss function
             load_previous (bool): Whether to load weights from a previous run
             weights_path (path-like): If load_previous is true, path to model weights
             iteration (int): If load_previous is true, the iteration of weights to load
@@ -51,6 +52,8 @@ class cWGAN:
 
         if load_previous:
             self.initialize_model(weights_path, iteration)
+
+        self.mass_loss_prop = mass_loss_prop
 
     def initialize_model(self, weights_path, iteration):
         """Load weights from previous run"""
@@ -231,7 +234,7 @@ class cWGAN:
         with tf.GradientTape() as tape:
             predicted_y = self.generator([x, noise], training=True)
             fake_output = self.critic([x, predicted_y], training=False)
-            generator_loss = 0.25*self.generator_loss(fake_output) + 0.75*self.mass_loss(y, predicted_y)
+            generator_loss = (1-self.mass_loss_prop)*self.generator_loss(fake_output) + self.mass_loss_prop*self.mass_loss(y, predicted_y)
 
         generator_grads = tape.gradient(
             generator_loss, self.generator.trainable_variables
@@ -277,14 +280,17 @@ class Trainer:
         load_previous = params_dict["load_previous"]
         weights_path = params_dict["weights_path"]
         iteration = params_dict["iteration"]
+        mass_loss_prop = params_dict["mass_loss_prop"]
 
         self.model = cWGAN(
-            noise_dims, optimizer, gen_lr, critic_lr, gp_weight, load_previous, weights_path, iteration
+            noise_dims, optimizer, gen_lr, critic_lr, gp_weight, mass_loss_prop, load_previous, weights_path, iteration
         )
 
         
         data_path = params_dict["data_path"]
-        if params_dict["data_type"] == "angular":
+        if params_dict["p_inv"]:
+            self.data = data_utils.load_jet_data_log_scaling_p_invariant(data_path)
+        elif params_dict["data_type"] == "angular":
             if params_dict["data_scaling"] == "inverse":
                 self.data = data_utils.load_jet_data_inverse_scaling(data_path)
             elif params_dict["data_scaling"] == "log":

@@ -145,6 +145,49 @@ def load_jet_data_log_scaling_cartesian(data_path):
     reco_data = data[:, 4:]
     return (parton_data, reco_data)
 
+def load_jet_data_log_scaling_p_invariant(data_path):
+    """Load and normalize the jet data
+
+    Scale Pt, E, and P by taking the log, and also scale each 
+    feature by the momentum of the given jet. Note that P and E are 
+    normalized with the same scale so that they can be used
+    to calculate the mass as part of the loss function.
+    Args:
+        data_path (path-like): path to txt file with jet 4-momenta
+
+    Returns:
+        tuple: tuple of ndarrays (parton_data, reco_data)
+    """
+    data = np.loadtxt(data_path, skiprows=2, dtype=np.float32)
+    np.log10(data[:, 0], out=data[:, 0])
+    np.log10(data[:, 3], out=data[:, 3])
+    np.log10(data[:, 5], out=data[:, 5])
+    np.log10(data[:, 8], out=data[:, 8])
+    np.log10(data[:, 9], out=data[:, 9])
+
+    for i in [0, 1, 2, 3, 5, 6, 7, 8]:
+        data[:, i] = data[:, i] / data[:, 4]
+
+    np.log10(data[:, 4], out=data[:, 4])
+
+
+    mean = np.mean(data, axis=0)
+    std = np.std(data, axis=0)
+
+    # Scale the energy and momentum with the same mean and std
+    mean[4] = mean[3]
+    std[4] = std[3]
+
+    mean[9] = mean[8]
+    std[9] = std[8]
+
+    data = (data - mean) / std
+
+    np.random.shuffle(data)
+    parton_data = data[:, :5]
+    reco_data = data[:, 5:]
+    return (parton_data, reco_data)
+
 
 def one_hot_encode(number):
     """Return a one-hot-encoded vector to serve as a label for MNIST data.
