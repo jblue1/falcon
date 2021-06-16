@@ -19,7 +19,18 @@ import sys
 class cWGAN:
     """Class implementing a conditional wasserstein generative adversarial network"""
 
-    def __init__(self, noise_dims, optimizer, gen_lr, critic_lr, gp_weight, mass_loss_prop, load_previous, weights_path, iteration):
+    def __init__(
+        self,
+        noise_dims,
+        optimizer,
+        gen_lr,
+        critic_lr,
+        gp_weight,
+        mass_loss_prop,
+        load_previous,
+        weights_path,
+        iteration,
+    ):
         """Constructor
 
         Args:
@@ -57,9 +68,8 @@ class cWGAN:
 
     def initialize_model(self, weights_path, iteration):
         """Load weights from previous run"""
-        self.generator.load_weights(weights_path + 'gen_' + str(iteration))
-        self.critic.load_weights(weights_path + 'critic_' + str(iteration))
-
+        self.generator.load_weights(weights_path + "gen_" + str(iteration))
+        self.critic.load_weights(weights_path + "critic_" + str(iteration))
 
     def build_generator(self):
         noise = keras.Input(shape=(self.noise_dims,), name="noiseIn")
@@ -213,11 +223,11 @@ class cWGAN:
 
     @tf.function
     def mass_loss(self, x, y):
-        pred_mass_squared = y[:, 3]**2 - y[:, 4]**2
-        true_mass_squared = x[:, 3]**2 - x[:, 4]**2
+        pred_mass_squared = y[:, 3] ** 2 - y[:, 4] ** 2
+        true_mass_squared = x[:, 3] ** 2 - x[:, 4] ** 2
 
-        return (pred_mass_squared - true_mass_squared)**2
-    
+        return (pred_mass_squared - true_mass_squared) ** 2
+
     @tf.function
     def train_generator(self, x, y):
         """Train generator on one batch of data
@@ -234,7 +244,9 @@ class cWGAN:
         with tf.GradientTape() as tape:
             predicted_y = self.generator([x, noise], training=True)
             fake_output = self.critic([x, predicted_y], training=False)
-            generator_loss = (1-self.mass_loss_prop)*self.generator_loss(fake_output) + self.mass_loss_prop*self.mass_loss(y, predicted_y)
+            generator_loss = (1 - self.mass_loss_prop) * self.generator_loss(
+                fake_output
+            ) + self.mass_loss_prop * self.mass_loss(y, predicted_y)
 
         generator_grads = tape.gradient(
             generator_loss, self.generator.trainable_variables
@@ -283,10 +295,17 @@ class Trainer:
         mass_loss_prop = params_dict["mass_loss_prop"]
 
         self.model = cWGAN(
-            noise_dims, optimizer, gen_lr, critic_lr, gp_weight, mass_loss_prop, load_previous, weights_path, iteration
+            noise_dims,
+            optimizer,
+            gen_lr,
+            critic_lr,
+            gp_weight,
+            mass_loss_prop,
+            load_previous,
+            weights_path,
+            iteration,
         )
 
-        
         data_path = params_dict["data_path"]
         if params_dict["p_inv"]:
             self.data = data_utils.load_jet_data_log_scaling_p_invariant(data_path)
@@ -319,7 +338,6 @@ class Trainer:
         self.critic_losses = []
         self.generator_losses = []
         self.wass_estimates = []
-
 
     def sample_batch_of_data(self):
         """Randomly sample self.batch_size (x, y) pairs from the dataset
