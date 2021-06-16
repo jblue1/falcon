@@ -19,7 +19,7 @@ histos :
 	./bin/makeHistos.out newPartonEvents.root histos.root momentaInfo
 
 angularData : 
-	./bin/writeJetMomentaAngular.out newPartonEventsFixedZCoord.root newPartonMatchedJetsNoRecoPtCutP3Feature.txt
+	./bin/writeJetMomentaAngular.out newPartonEventsFixedZCoord.root newPartonMatchedJetsNoRecoPtCutP3Feature.txt 1
 
 cartesianData : 
 	./bin/writeJetMomentaCartesian.out newPartonEventsFixedZCoord.root testingforPt25Jets.txt
