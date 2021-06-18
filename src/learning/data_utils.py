@@ -93,19 +93,52 @@ def load_jet_data_log_scaling(data_path):
         tuple: tuple of ndarrays (parton_data, reco_data)
     """
     data = np.loadtxt(data_path, skiprows=2, dtype=np.float32)
-    np.log10(data[:, 0], out=data[:, 0])
-    np.log10(data[:, 3], out=data[:, 3])
-    np.log10(data[:, 4], out=data[:, 4])
-    np.log10(data[:, 7], out=data[:, 7])
-    
-    mean = np.mean(data, axis=0)
-    std = np.std(data, axis=0)
-    
-    data = (data - mean) / std
+
+    # exclude jets with |p| > E
+    good_indices = []
+    for i in range(len(data)):
+        if (data[i, 3] - data[i, 0]*np.cosh(data[i, 1])) > 0 and (data[i, 7] - data[i, 4]*np.cosh(data[i, 5])) > 0:
+            good_indices.append(i)
+
+    new_data = np.zeros((len(good_indices), 24), dtype=np.float32)
+    j = 0
+    for i in good_indices:
+        # four momenta for parton and reco jets
+        new_data[j, :4] = data[i, :4] 
+        new_data[j, 12:16] = data[i, 4:]
+        
+        # new parton jet quantities
+        new_data[j, 4] = data[i, 0]*np.cosh(data[i, 1]) # |p|
+        new_data[j, 5] = data[i, 3] - new_data[j, 4] # E - |p|
+        new_data[j, 6] = data[i, 3] - data[i, 0] # E - pt
+        new_data[j, 7] = data[i, 0]*data[i, 1] # pt*eta
+        new_data[j, 8] = data[i, 0]*data[i, 2] # pt*phi
+        new_data[j, 9] = data[i, 0]*data[i, 3] # pt*E
+        new_data[j, 10] = data[i, 3]*data[i, 1] # E*eta
+        new_data[j, 11] = data[i, 3]*data[i, 2] # E*phi
+
+        #new reco jet quantities
+        new_data[j, 16] = data[i, 4]*np.cosh(data[i, 5]) # |p|
+        new_data[j, 17] = data[i, 7] - new_data[j, 16] # E - |p|
+        new_data[j, 18] = data[i, 7] - data[i, 4] # E - pt
+        new_data[j, 19] = data[i, 4]*data[i, 5] # pt*eta
+        new_data[j, 20] = data[i, 4]*data[i, 6] # pt*phi
+        new_data[j, 21] = data[i, 4]*data[i, 7] # pt*E
+        new_data[j, 22] = data[i, 7]*data[i, 5] # E*eta
+        new_data[j, 23] = data[i, 7]*data[i, 6] # E*phi
+        j += 1
+
+    for i in [0, 3, 4, 5, 6, 9, 12, 15, 16, 17, 18, 21]:
+        np.log10(new_data[:, i], out=new_data[:, i])
+
+
+    mean = np.mean(new_data, axis=0)
+    std = np.std(new_data, axis=0)    
+    new_data = (new_data - mean) / std
 
     np.random.shuffle(data)
-    parton_data = data[:, :4]
-    reco_data = data[:, 4:]
+    parton_data = new_data[:, :12]
+    reco_data = new_data[:, 12:]
     return (parton_data, reco_data)
 
 

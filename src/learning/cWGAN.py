@@ -60,7 +60,7 @@ class cWGAN:
 
     def build_generator(self):
         noise = keras.Input(shape=(self.noise_dims,), name="noiseIn")
-        x_in = keras.Input(shape=(4,), name="pjetIn")
+        x_in = keras.Input(shape=(12,), name="pjetIn")
 
         concat = keras.layers.concatenate([x_in, noise], name="concat")
         z = keras.layers.Dense(512, activation="relu")(concat)
@@ -68,13 +68,13 @@ class cWGAN:
         z = keras.layers.Dense(512, activation="relu")(z)
         z = keras.layers.Dense(512, activation="relu")(z)
         z = keras.layers.Dense(512, activation="relu")(z)
-        out = keras.layers.Dense(4)(z)
+        out = keras.layers.Dense(12)(z)
 
         return keras.Model([x_in, noise], out)
 
     def build_critic(self):
-        x_in = keras.Input(shape=(4,))
-        y_in = keras.Input(shape=(4,))
+        x_in = keras.Input(shape=(12,))
+        y_in = keras.Input(shape=(12,))
         concat = keras.layers.concatenate([x_in, y_in])
 
         z = keras.layers.Dense(512, activation="relu")(concat)
