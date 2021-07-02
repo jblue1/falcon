@@ -14,7 +14,8 @@ using namespace fastjet;
  * Describe parameters taken and print errors if parameters are incorrectly
  * given.
  */
-void usage(std::ostream &out, const char *msg) {
+void usage(std::ostream &out, const char *msg)
+{
   out << msg << std::endl;
   out << std::endl;
   out << "    Usage:" << std::endl;
@@ -24,8 +25,10 @@ void usage(std::ostream &out, const char *msg) {
   exit(1);
 }
 
-int main(int argc, char const *argv[]) {
-  if (argc != 2) {
+int main(int argc, char const *argv[])
+{
+  if (argc != 2)
+  {
     usage(std::cerr, "Incorrect number of parameters given.");
   }
 
@@ -53,17 +56,28 @@ int main(int argc, char const *argv[]) {
   tree->SetBranchAddress("pfJetPz", &pfJetPz);
   tree->SetBranchAddress("pfJetE", &pfJetE);
 
-  for (int i = 0; i < 1; i++) {
+  int numEvents = tree->GetEntries();
+
+  std::ofstream write_out("./data/processed/jetMasses.txt");
+  write_out.precision(16);
+  write_out << "E^2 p1^2 p2^2" << std::endl;
+
+  for (int i = 0; i < numEvents; i++)
+  {
     tree->GetEntry(i);
     int numJets = pfJetPx->size();
 
-    for (int j = 0; j < numJets; j++) {
-      std::cout << "Jet Mass: "
-                << pow((*pfJetE)[j], 2) - pow((*pfJetPx)[j], 2) -
-                       pow((*pfJetPy)[j], 2) - pow((*pfJetPz)[j], 2)
-                << std::endl;
+    for (int j = 0; j < numJets; j++)
+    {
+      float eSquared = pow((*pfJetE)[j], 2);
+      float p1Squared = pow((*pfJetPx)[j], 2) +
+                        pow((*pfJetPy)[j], 2) + pow((*pfJetPz)[j], 2);
+      float p2Squared = pow((*pfJetPt)[j] * cosh((*pfJetEta)[j]), 2);
+      write_out << eSquared << " " << p1Squared << " " << p2Squared << std::endl;
+
     }
   }
+  write_out.close();
 
   exit(0);
 }
