@@ -15,6 +15,9 @@ writeJetMomentaCartesian.out : src/writeJetMomentaCartesian.cc src/helpers.h
 analyzeDelphesJets.out : src/analyzeDelphesJets.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -o bin/analyzeDelphesJets.out $^ $(ROOTFLAGS) $(FASTJETFLAGS) $(DELPHESFLAGS)
 
+makeKDTreeBins.out : src/makeKDTreeBins.cc 
+	$(CXX) $(CXXFLAGS) -o bin/makeKDTreeBins.out $^ $(ROOTFLAGS) 
+
 histos : 
 	./bin/makeHistos.out newPartonEvents.root histos.root momentaInfo
 
@@ -27,4 +30,6 @@ cartesianData :
 delphes :
 	./bin/analyzeDelphesJets.out /home/DAVIDSON/joblue/CMSSW_10_2_24/src/analyzer/MyAnalyzer/Delphes/adjusted_delphes_card_CMS.root ./data/raw/newPartonEventswPFCands.root
 
+KDTreeBins : 
+	./bin/makeKDTreeBins.out
 .PHONY: angularData cartesianData histos delphes
