@@ -6,6 +6,9 @@ DELPHESFLAGS = -I ~/CMSSW_10_2_24/src/Delphes-3.4.2/ -I ~/CMSSW_10_2_24/src/Delp
 makeHistos.out : src/analyzeJets.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -o bin/makeHistos.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
 
+makeCheckMass.out : src/checkMass.cc src/helpers.h
+	$(CXX) $(CXXFLAGS) -o bin/makeCheckMass.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
+
 writeJetMomentaAngular.out : src/writeJetMomentaAngular.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -o bin/writeJetMomentaAngular.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
 
@@ -18,6 +21,8 @@ analyzeDelphesJets.out : src/analyzeDelphesJets.cc src/helpers.h
 histos : 
 	./bin/makeHistos.out newPartonEvents.root histos.root momentaInfo
 
+checkMass : 
+	./bin/makeCheckMass.out newPartonEventsFixedZCoord.root 
 angularData : 
 	./bin/writeJetMomentaAngular.out newPartonEvents.root newPartonMatchedJetsNoRecoPtCut.txt
 
