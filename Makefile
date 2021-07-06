@@ -28,7 +28,7 @@ checkMass :
 	./bin/makeCheckMass.out newPartonEventsFixedZCoord.root 
 
 angularData : 
-	./bin/writeJetMomentaAngular.out newPartonEvents.root newPartonMatchedJetsNoRecoPtCut.txt
+	./bin/writeJetMomentaAngular.out newPartonEventsFixedZCoord.root newPartonMatchedJetsNoRecoPtCutFixRap.txt
 
 cartesianData : 
 	./bin/writeJetMomentaCartesian.out newPartonEventsFixedZCoord.root testingforPt25Jets.txt
