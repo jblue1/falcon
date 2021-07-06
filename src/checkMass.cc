@@ -4,9 +4,11 @@
 
 #include "TFile.h"
 #include "TTree.h"
-#include "fastjet/ClusterSequence.hh"
 #include <cmath>
 #include <fstream>
+#include <iostream>
+#include "fastjet/ClusterSequence.hh"
+#include "helpers.h"
 
 using namespace fastjet;
 
@@ -48,6 +50,11 @@ int main(int argc, char const *argv[])
   std::vector<Float_t> *pfJetPz = 0;
   std::vector<Float_t> *pfJetE = 0;
 
+  std::vector<Float_t> *partonPx = 0;
+  std::vector<Float_t> *partonPy = 0;
+  std::vector<Float_t> *partonPz = 0;
+  std::vector<Float_t> *partonE = 0;
+
   tree->SetBranchAddress("pfJetPt", &pfJetPt);
   tree->SetBranchAddress("pfJetEta", &pfJetEta);
   tree->SetBranchAddress("pfJetPhi", &pfJetPhi);
@@ -56,25 +63,73 @@ int main(int argc, char const *argv[])
   tree->SetBranchAddress("pfJetPz", &pfJetPz);
   tree->SetBranchAddress("pfJetE", &pfJetE);
 
+  tree->SetBranchAddress("partonPx", &partonPx);
+  tree->SetBranchAddress("partonPy", &partonPy);
+  tree->SetBranchAddress("partonPz", &partonPz);
+  tree->SetBranchAddress("partonE", &partonE);
+
   int numEvents = tree->GetEntries();
 
-  std::ofstream write_out("./data/processed/jetMasses.txt");
-  write_out.precision(16);
-  write_out << "E^2 p1^2 p2^2" << std::endl;
+  std::ofstream write_out("./data/processed/JetMasses.txt");
+  write_out.precision(std::numeric_limits<double>::digits10);
+
+  write_out << "p1 = px^2 + py^2 + pz^2" << std::endl;
+  write_out << "partonPt partonEta partonPhi partonE partonM^2 partonP1 recoPt recoEta recoPhi recoE recoP1" << std::endl;
 
   for (int i = 0; i < numEvents; i++)
   {
     tree->GetEntry(i);
-    int numJets = pfJetPx->size();
 
-    for (int j = 0; j < numJets; j++)
+    int numPartons = partonPx->size();
+    std::vector<PseudoJet> partons;
+    for (int j = 0; j < numPartons; j++)
     {
-      float eSquared = pow((*pfJetE)[j], 2);
-      float p1Squared = pow((*pfJetPx)[j], 2) +
-                        pow((*pfJetPy)[j], 2) + pow((*pfJetPz)[j], 2);
-      float p2Squared = pow((*pfJetPt)[j] * cosh((*pfJetEta)[j]), 2);
-      write_out << eSquared << " " << p1Squared << " " << p2Squared << std::endl;
+      partons.push_back(PseudoJet((*partonPx)[j], (*partonPy)[j], (*partonPz)[j], (*partonE)[j]));
+      partons[j].set_user_index(j);
+    }
 
+    double R = 0.4;
+    JetDefinition jet_def(antikt_algorithm, R);
+    ClusterSequence cs(partons, jet_def);
+
+    std::vector<PseudoJet> partonJets = cs.inclusive_jets();
+
+    if (partonJets.size() > 0)
+    {
+      for (size_t j = 0; j < partonJets.size(); j++)
+      {
+        if (partonJets[j].pt() > 20)
+        {
+          float minDRPfJet = 10.0;
+          int pfJetIndex = 0;
+          for (size_t k = 0; k < pfJetPt->size(); k++)
+          {
+            float dR = deltaR((*pfJetEta)[k], (*pfJetPhi)[k], partonJets[j].rap(),
+                              partonJets[j].phi_std());
+            if (dR < minDRPfJet)
+            {
+              minDRPfJet = dR;
+              pfJetIndex = k;
+            }
+          }
+
+          if (minDRPfJet < 0.35)
+          {
+            write_out
+                << partonJets[j].pt() << " "
+                << partonJets[j].rap() << " "
+                << partonJets[j].phi_std() << " "
+                << partonJets[j].e() << " "
+                << partonJets[j].m2() << " "
+                << sqrt(pow(partonJets[j].px(), 2) + pow(partonJets[j].py(), 2) + pow(partonJets[j].pz(), 2)) << " "
+                << (*pfJetPt)[pfJetIndex] << " "
+                << (*pfJetEta)[pfJetIndex] << " "
+                << (*pfJetPhi)[pfJetIndex] << " "
+                << (*pfJetE)[pfJetIndex] << " "
+                << sqrt(pow((*pfJetPx)[pfJetIndex], 2) + pow((*pfJetPy)[pfJetIndex], 2) + pow((*pfJetPz)[pfJetIndex], 2)) << std::endl;
+          }
+        }
+      }
     }
   }
   write_out.close();
