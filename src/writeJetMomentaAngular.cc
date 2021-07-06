@@ -105,7 +105,7 @@ int main(int arc, char const *argv[])
                     {
                         write_out
                             << partonJets[j].pt() << " "
-                            << partonJets[j].rap() << " "
+                            << partonJets[j].eta() << " "
                             << partonJets[j].phi_std() << " "
                             << partonJets[j].e() << " "
                             << (*pfJetPt)[pfJetIndex] << " "
