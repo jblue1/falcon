@@ -12,6 +12,9 @@ makeCheckMass.out : src/checkMass.cc src/helpers.h
 writeJetMomentaAngular.out : src/writeJetMomentaAngular.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -o bin/writeJetMomentaAngular.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
 
+writeJetMomentaJetTagged.out : src/writeJetMomentaJetTagged.cc src/helpers.h
+	$(CXX) $(CXXFLAGS) -o bin/writeJetMomentaJetTagged.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
+
 writeJetMomentaCartesian.out : src/writeJetMomentaCartesian.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -o bin/writeJetMomentaCartesian.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
 
@@ -29,6 +32,9 @@ checkMass :
 
 angularData : 
 	./bin/writeJetMomentaAngular.out newPartonEventsFixedZCoord.root newPartonMatchedJetsNoRecoPtCutFixRapMassEventNumber.txt
+
+jetTaggedData : 
+	./bin/writeJetMomentaJetTagged.out newPartonEventsJetTagged.root newPartonMatchedJetsNoRecoPtCutJetTagged.txt
 
 cartesianData : 
 	./bin/writeJetMomentaCartesian.out newPartonEventsFixedZCoord.root testingforPt25Jets.txt
