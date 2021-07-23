@@ -20,8 +20,8 @@ assert os.path.isdir(save_dir)
 
 def loadData():
     data = np.loadtxt(
-        "./data/processed/newPartonMatchedJetsNoRecoPtCutFixRapMassEventNumber.txt",
-        skiprows=2
+        "./data/processed/newPartonMatchedJetsNoRecoPtCutJetTagged.txt",
+        skiprows=3
     )
 
     np.log10(data[:, 0], out=data[:, 0])
@@ -67,14 +67,21 @@ def loadEvents(data):
 
 
 def main():
-    cwgan = cWGAN.cWGAN(10, "RMSprop", 0.000002, 0.00001, 10, False, "", 0)
-    cwgan.generator.load_weights(save_dir + '/training_checkpoints/gen_195000')
+    #cwgan = cWGAN.cWGAN(10, "RMSprop", 0.000002, 0.00001, 10, False, "", 0)
+    #cwgan.generator.load_weights(save_dir + '/training_checkpoints/gen_195000')
     data, reco_mean, reco_std = loadData()
-    events = loadEvents(data)
-    leadingJets = []
-    secondLeadingJets = []
-    predictedLeadingJets = []
-    predictedSecondLeadingJets = []
+    #print(data)
+    #events = loadEvents(data)
+    bottomJetPts = []
+    WJetPts = []
+    for i in range(len(data)):
+        if data[i, 8] > 0:
+            bottomJetPts.append(data[i, 3])
+        else:
+            WJetPts.append(data[i, 3])
+    #predictedLeadingJets = []
+    #predictedSecondLeadingJets = []
+    """
     for event in events:
         if len(event) >= 6:
             inputs = np.vstack((event[0][:4], event[5][:4]))
@@ -88,15 +95,17 @@ def main():
             leadingJets.append(event[0][4])
             leadingJets.append(event[5][4])
             #secondLeadingJets.append(event[5][4])
-    print(len(leadingJets))
-    bins = np.linspace(0, 400, 100)
+    """
+    #print(len(leadingJets))
+    bins = np.linspace(0, 30, 100)
     fig = plt.figure(figsize=(8,6), dpi=100)
     ax = fig.add_subplot(111)
-    ax.hist(leadingJets, bins=bins, label="True")
-    ax.hist(predictedLeadingJets, bins=bins, alpha=0.5, label="Predicted")
-    ax.set_title(r"$p_T$ Distribution of First and Sixth leading $p_T$ Jet in each event")
+    ax.hist(data[:, 7], bins=bins, label="bottom")
+    #ax.hist(WJetPts, bins=bins, alpha=0.5, label="W")
+    ax.set_title(r"$m$ Distribution of Top Jets")
     ax.legend()
     plt.savefig("./hist2.png")
+
 
 
 if __name__ == "__main__":
