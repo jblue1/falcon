@@ -18,7 +18,7 @@ writeJetMomentaCartesian.out : src/writeJetMomentaCartesian.cc src/helpers.h
 analyzeDelphesJets.out : src/analyzeDelphesJets.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -o bin/analyzeDelphesJets.out $^ $(ROOTFLAGS) $(FASTJETFLAGS) $(DELPHESFLAGS)
 
-makeKDTreeBins.out : src/makeKDTreeBins.cc 
+makeKDTreeBins.out : src/analyze/makeKDTreeBins.cc 
 	$(CXX) $(CXXFLAGS) -o bin/makeKDTreeBins.out $^ $(ROOTFLAGS) 
 
 histos : 
@@ -28,7 +28,7 @@ checkMass :
 	./bin/makeCheckMass.out newPartonEventsFixedZCoord.root 
 
 angularData : 
-	./bin/writeJetMomentaAngular.out newPartonEventsFixedZCoord.root newPartonMatchedJetsNoRecoPtCutFixRapMass.txt
+	./bin/writeJetMomentaAngular.out newPartonEventsFixedZCoord.root newPartonMatchedJetsNoRecoPtCutFixRapMassEventNumber.txt
 
 cartesianData : 
 	./bin/writeJetMomentaCartesian.out newPartonEventsFixedZCoord.root testingforPt25Jets.txt
