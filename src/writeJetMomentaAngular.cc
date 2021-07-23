@@ -28,7 +28,7 @@ int main(int arc, char const *argv[])
     assert(write_out.is_open());
 
     write_out << "The file contains 4 vectors of matched parton and reco jets. The columns are" << std::endl;
-    write_out << "Pt_p Eta_p Phi_p E_p Pt_r Eta_r Phi_r E_r" << std::endl;
+    write_out << "Pt_p Eta_p Phi_p m_p Pt_r Eta_r Phi_r m_r event_number" << std::endl;
 
     std::vector<Float_t> *partonPx = 0;
     std::vector<Float_t> *partonPy = 0;
