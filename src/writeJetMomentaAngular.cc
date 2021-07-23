@@ -99,7 +99,7 @@ int main(int arc, char const *argv[])
                     int pfJetIndex = 0;
                     for (size_t k = 0; k < pfJetPt->size(); k++)
                     {
-                        float dR = deltaR((*pfJetEta)[k], (*pfJetPhi)[k], partonJets[j].rap(),
+                        float dR = deltaR((*pfJetEta)[k], (*pfJetPhi)[k], partonJets[j].eta(),
                                           partonJets[j].phi_std());
                         if (dR < minDRPfJet)
                         {
@@ -125,7 +125,8 @@ int main(int arc, char const *argv[])
                                 << (*pfJetPt)[pfJetIndex] << " "
                                 << (*pfJetEta)[pfJetIndex] << " "
                                 << (*pfJetPhi)[pfJetIndex] << " "
-                                << sqrt(pfJetMSquared) << std::endl;
+                                << sqrt(pfJetMSquared) <<  " "
+                                << i << std::endl;
                         }
                     }
                 }
