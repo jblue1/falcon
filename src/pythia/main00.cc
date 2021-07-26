@@ -23,11 +23,14 @@ std::vector<float> RECO_STD_DEVS = {0.3107208060660628, 1.609712071592146,
 
 std::vector<float> normalize(std::vector<float> four_vec,
                              std::vector<float> mean,
-                             std::vector<float> std_dev) {
-  for (int i = 0; i < four_vec.size(); i++) {
+                             std::vector<float> std_dev)
+{
+  for (int i = 0; i < four_vec.size(); i++)
+  {
     int index = i % 4;
 
-    if (index == 0 || index == 3) {
+    if (index == 0 || index == 3)
+    {
       // take base 10 log of pT and E components
       four_vec[i] = log10(four_vec[i]);
     }
@@ -40,13 +43,16 @@ std::vector<float> normalize(std::vector<float> four_vec,
 
 std::vector<float> unnormalize(std::vector<float> four_vec,
                                std::vector<float> mean,
-                               std::vector<float> std_dev) {
-  for (int i = 0; i < four_vec.size(); i++) {
+                               std::vector<float> std_dev)
+{
+  for (int i = 0; i < four_vec.size(); i++)
+  {
     int index = i % 4;
     // multiply by std dev and add mean for each component
     four_vec[i] = four_vec[i] * std_dev[index] + mean[index];
 
-    if (index == 0 || index == 3) {
+    if (index == 0 || index == 3)
+    {
       // take base 10 log of pT and E components
       four_vec[i] = pow(10, four_vec[i]);
     }
@@ -56,26 +62,29 @@ std::vector<float> unnormalize(std::vector<float> four_vec,
 }
 
 void write_momenta(std::ofstream &stream, std::vector<int> &events, std::vector<float> &parton_jet,
-                   std::vector<float> &reco_jet) {
+                   std::vector<float> &reco_jet)
+{
 
   int jet_number = 0;
-  for (int i = 0; i < reco_jet.size(); i++) {
+  for (int i = 0; i < reco_jet.size(); i++)
+  {
     int index = i % 4;
-    
 
-    if (index == 0) {
+    if (index == 0)
+    {
       stream << events[jet_number] << " ";
     }
 
-    
     stream << parton_jet[i] << " " << reco_jet[i];
 
-    if (index == 3) {
+    if (index == 3)
+    {
       stream << std::endl;
       jet_number++;
-    } else {
+    }
+    else
+    {
       stream << " ";
-      
     }
   }
 }
@@ -84,19 +93,23 @@ void write_momenta(std::ofstream &stream, std::vector<int> &events, std::vector<
 unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 std::default_random_engine generator(seed);
 
-std::vector<float> sample_rand_vec(int size) {
+std::vector<float> sample_rand_vec(int size)
+{
   std::vector<float> output;
 
   std::uniform_real_distribution<double> distribution(0.0, 1.0);
-  for (int i = 0; i < size; i++) {
+  for (int i = 0; i < size; i++)
+  {
     double number = distribution(generator);
     output.push_back(number);
   }
   return output;
 }
 
-int main(int argc, char const *argv[]) {
-  if (argc != 2) {
+int main(int argc, char const *argv[])
+{
+  if (argc != 2)
+  {
     std::cout << "Incorrect number of arguments" << std::endl;
     return 1;
   }
@@ -109,7 +122,8 @@ int main(int argc, char const *argv[]) {
   cppflow::model model(
       "/home/DAVIDSON/joblue/phy2/falcon/models/cWGAN/Run_2021-03-09_0/model");
   auto ops = model.get_operations();
-  for (int kk = 0; kk < ops.size(); kk++) {
+  for (int kk = 0; kk < ops.size(); kk++)
+  {
     std::cout << ops[kk] << std::endl;
   }
 
@@ -152,7 +166,8 @@ int main(int argc, char const *argv[]) {
   std::vector<int> events;
 
   // Loop over events.
-  for (int i = 0; i < numEvents; ++i) {
+  for (int i = 0; i < numEvents; ++i)
+  {
 
     // Generate an event.
     pythia.next();
@@ -161,10 +176,12 @@ int main(int argc, char const *argv[]) {
 
     float totalE = 0.0;
     std::vector<PseudoJet> particles;
-    for (int j = 0; j < numParticles; j++) {
+    for (int j = 0; j < numParticles; j++)
+    {
       Particle &p = pythia.event[j];
       int status = p.status();
-      if (status > 0) {
+      if (status > 0)
+      {
         int id = p.id();
         if (
             // quarks
@@ -180,11 +197,14 @@ int main(int argc, char const *argv[]) {
             id == 4203 || id == 4301 || id == 4303 || id == 4403 ||
             id == 5101 || id == 5103 || id == 5201 || id == 5203 ||
             id == 5301 || id == 5303 || id == 5401 || id == 5403 ||
-            id == 5503) {
+            id == 5503)
+        {
 
           totalE += p.e();
           particles.push_back(PseudoJet(p.px(), p.py(), p.pz(), p.e()));
-        } else if (id > 22 || id < -22) {
+        }
+        else if (id > 22 || id < -22)
+        {
           std::cout << "Did not include particle: " << id << " with Pt "
                     << p.pT() << std::endl;
         }
@@ -198,12 +218,14 @@ int main(int argc, char const *argv[]) {
 
     std::vector<PseudoJet> jets = cs.inclusive_jets();
 
-    for (int j = 0; j < jets.size(); j++) {
+    for (int j = 0; j < jets.size(); j++)
+    {
       float partonJetPt = jets[j].pt();
       float partonJetEta = jets[j].rap();
       float partonJetPhi = jets[j].phi_std();
       float partonJetE = jets[j].E();
-      if (partonJetPt > 20) {
+      if (partonJetPt > 20)
+      {
         parton_jet_momenta.push_back(partonJetPt);
         parton_jet_momenta.push_back(partonJetEta);
         parton_jet_momenta.push_back(partonJetPhi);
