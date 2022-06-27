@@ -1,3 +1,21 @@
+/**
+ * This code is used to create an executable generate reco level jet 4-vectors using pythia, 
+ * cppflow, and a saved version of a trained cWGAN. timeTestModel.py is an example of a 
+ * python scrip that uses the executable. The executable takes in 
+ *
+ * 
+ * NOTE: To compile this script, you need to not have the falcon conda env activated, and 
+ * you need some additional packages. First, you need to install 
+ * the tensorflow 2 C api: https://www.tensorflow.org/install/lang_c. Next, you need the cppflow
+ * library: https://github.com/serizba/cppflow. Finally, you need to have a version of pythia
+ * installed: https://pythia.org/. 
+ * ADDITIONALLY: You need to set the following environmental variables: 
+ * export LIBRARY_PATH=$LIBRARY_PATH:/path/to/where/you/installed/libtensorflow2/lib
+ * export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/where/you/installed/libtensorflow2/lib
+ * export PYTHIAROOT=/path/to/where/you/installed/pythia
+ * FINALLY: The makefile in this directory has TENSORFLOWFLAGS and CPPFLOWFLAGS. You need 
+ * to set these to where you have installed libtensorflow2 and cppflow. 
+ */
 #include "Pythia8/Pythia.h"
 #include "cppflow/cppflow.h"
 #include "fastjet/ClusterSequence.hh"
@@ -11,15 +29,6 @@ using namespace fastjet;
 
 // constants used for normalizing and un-normalizing data
 // To see where these come from look at notebook evaluatecWGAN.ipynb
-
-std::vector<float> PARTON_MEANS = {1.7325336127869422, -4.3696245126315283e-03,
-                                   -8.1989632208202834e-04, 2.0738273199892845};
-std::vector<float> PARTON_STD_DEVS = {0.2664415599646997, 1.6049471051941415,
-                                      1.813214019844585, 0.4007043722622637};
-std::vector<float> RECO_MEANS = {1.6574159582302348, -4.4009885497273684e-03,
-                                 -5.8530799456628130e-04, 1.9991621188618929};
-std::vector<float> RECO_STD_DEVS = {0.3107208060660628, 1.609712071592146,
-                                    1.8132994467877084, 0.4030490622744889};
 
 std::vector<float> normalize(std::vector<float> four_vec,
                              std::vector<float> mean,
@@ -65,6 +74,7 @@ void write_momenta(std::ofstream &stream, std::vector<int> &events, std::vector<
                    std::vector<float> &reco_jet)
 {
 
+
   int jet_number = 0;
   for (int i = 0; i < reco_jet.size(); i++)
   {
@@ -93,6 +103,7 @@ void write_momenta(std::ofstream &stream, std::vector<int> &events, std::vector<
 unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 std::default_random_engine generator(seed);
 
+// Create a 1-D vector of random floats sampled from UNI[0,1]
 std::vector<float> sample_rand_vec(int size)
 {
   std::vector<float> output;
@@ -108,26 +119,49 @@ std::vector<float> sample_rand_vec(int size)
 
 int main(int argc, char const *argv[])
 {
-  if (argc != 2)
+  if (argc != 18)
   {
     std::cout << "Incorrect number of arguments" << std::endl;
     return 1;
   }
+  auto start = std::chrono::high_resolution_clock::now();
+  // load the means and std_devs for normalization.
+  std::vector<float> parton_means;
+  std::vector<float> parton_std_devs;
+  std::vector<float> reco_means;
+  std::vector<float> reco_std_devs;
+  for (int i=0; i<4; i++) {
+    parton_means.push_back(atof(argv[i+2])); //argv[1] is the number of events
+  }
+  for (int i=0; i<4; i++) {
+    parton_std_devs.push_back(atof(argv[i+6]));
+  }
+  for (int i=0; i<4; i++) {
+    reco_means.push_back(atof(argv[i+10]));
+  }
+  for (int i=0; i<4; i++) {
+    reco_std_devs.push_back(atof(argv[i+14]));
+  }
+  auto end_load_constants = std::chrono::high_resolution_clock::now();
+
   std::ofstream write_out("test-cppflow.txt");
   // std::ofstream energy_out("total_energy-cppflow.txt");
   assert(write_out.is_open());
   // assert(energy_out.is_open());
 
+  auto start_load_model = std::chrono::high_resolution_clock::now();
   // load model
   cppflow::model model(
-      "/home/DAVIDSON/joblue/phy2/falcon/models/cWGAN/Run_2021-03-09_0/model");
-  auto ops = model.get_operations();
-  for (int kk = 0; kk < ops.size(); kk++)
-  {
-    std::cout << ops[kk] << std::endl;
-  }
+      "/home/DAVIDSON/joblue/phy2/falcon/models/cWGAN/Run_2021-07-23_2/model");
+  auto end_load_model = std::chrono::high_resolution_clock::now();
+  //auto ops = model.get_operations();
+  //for (int kk = 0; kk < ops.size(); kk++)
+  //{
+  //  std::cout << ops[kk] << std::endl;
+  //}
 
   // Generator. Process selection. LHC initialization. Histogram.
+  auto start_generate_events = std::chrono::high_resolution_clock::now();
   Pythia pythia;
 
   int numEvents = atoi(argv[1]);
@@ -165,6 +199,7 @@ int main(int argc, char const *argv[])
 
   std::vector<int> events;
 
+  
   // Loop over events.
   for (int i = 0; i < numEvents; ++i)
   {
@@ -224,23 +259,28 @@ int main(int argc, char const *argv[])
       float partonJetEta = jets[j].rap();
       float partonJetPhi = jets[j].phi_std();
       float partonJetE = jets[j].E();
-      if (partonJetPt > 20)
+      float partonJetPSquared = pow(jets[j].px(), 2) + pow(jets[j].py(), 2) + pow(jets[j].pz(), 2);
+      float partonJetMSquared = pow(jets[j].e(), 2) - partonJetPSquared;
+      if (partonJetPt > 20 && partonJetMSquared > 0)
       {
         parton_jet_momenta.push_back(partonJetPt);
         parton_jet_momenta.push_back(partonJetEta);
         parton_jet_momenta.push_back(partonJetPhi);
-        parton_jet_momenta.push_back(partonJetE);
+        parton_jet_momenta.push_back(sqrt(partonJetMSquared));
         events.push_back(i);
         num_jets++;
       }
     }
   }
+  auto end_generate_events = std::chrono::high_resolution_clock::now();
+
+  auto start_use_model = std::chrono::high_resolution_clock::now();
   const std::vector<float> rand = sample_rand_vec(10 * num_jets);
   const std::vector<int64_t> rand_shape = {num_jets, 10};
   const std::vector<int64_t> jets_shape = {num_jets, 4};
 
   std::vector<float> normalized_parton_jet_momenta =
-      normalize(parton_jet_momenta, PARTON_MEANS, PARTON_STD_DEVS);
+      normalize(parton_jet_momenta, parton_means, parton_std_devs);
 
   cppflow::tensor noise = cppflow::tensor(rand, rand_shape);
   cppflow::tensor jets_tensor =
@@ -249,16 +289,36 @@ int main(int argc, char const *argv[])
                        {"serving_default_pjetIn", jets_tensor}},
                       {"StatefulPartitionedCall:0"});
   cppflow::tensor *data = output.data();
+  auto end_use_model = std::chrono::high_resolution_clock::now();
+  auto start_unnormalize = std::chrono::high_resolution_clock::now();
   std::vector<float> data_vec = data->get_data<float>();
   std::vector<float> reco_jet_momenta =
-      unnormalize(data_vec, RECO_MEANS, RECO_STD_DEVS);
-
+      unnormalize(data_vec, reco_means, reco_std_devs);
+  auto end_unnormalize = std::chrono::high_resolution_clock::now();
+  auto start_write_out = std::chrono::high_resolution_clock::now();
   write_momenta(write_out, events, parton_jet_momenta, reco_jet_momenta);
+  auto end_write_out = std::chrono::high_resolution_clock::now();
 
   // Statistics: full printout.
-  pythia.stat();
+  //pythia.stat();
 
   write_out.close();
+  auto end = std::chrono::high_resolution_clock::now();
   // energy_out.close();
+  std::chrono::duration<double> load_constants = end_load_constants - start;
+  std::chrono::duration<double> load_model = end_load_model - start_load_model;
+  std::chrono::duration<double> generate_events = end_generate_events - start_generate_events;
+  std::chrono::duration<double> use_model = end_use_model - start_use_model;
+  std::chrono::duration<double> write_out_data = end_write_out - start_write_out;
+  std::chrono::duration<double> unnormlize_data = end_unnormalize - start_unnormalize;
+  std::chrono::duration<double> total = end - start;
+  std::cout << "TIMING RESULTS: " << std::endl;
+  std::cout << "load constants: " << load_constants.count() << std::endl;
+  std::cout << "load model: " << load_model.count() << std::endl;
+  std::cout << "generate events: " << generate_events.count() << std::endl;
+  std::cout << "use model: " << use_model.count() << std::endl;
+  std::cout << "write out: " << write_out_data.count() << std::endl;
+  std::cout << "unnormalize: " << unnormlize_data.count() << std::endl;
+  std::cout << "total: " << total.count() << std::endl;
   return 0;
 }
