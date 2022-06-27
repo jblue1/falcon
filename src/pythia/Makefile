@@ -15,9 +15,11 @@
 ################################################################################
 
 # Set the shell.
+
 SHELL=/usr/bin/env bash
-PYTHIAROOT=/home/DAVIDSON/joblue/Pythia/pythia8230
-#PYTHIAROOT=/home/DAVIDSON/joblue/phy2/pythia8303/
+#PYTHIAROOT=/home/DAVIDSON/joblue/Pythia/pythia8230
+PYTHIAROOT=/home/DAVIDSON/joblue/phy2/pythia8303/
+#PYTHIAROOT=/home/DAVIDSON/joblue/delphes-issue/pythia8235
 FASTJETFLAGS = `$(FASTJETSYS)/bin/fastjet-config --cxxflags --libs --plugins`
 TENSORFLOWFLAGS = -I /home/DAVIDSON/joblue/libtensorflow2/include -ltensorflow
 CPPFLOWFLAGS = -I /home/DAVIDSON/joblue/phy2/cppflow/include
@@ -43,7 +45,7 @@ ifneq ("$(wildcard ../lib/libpythia8.*)","")
   PREFIX_INCLUDE=$(PYTHIAROOT)/include
 endif
 
-CXX_COMMON:=-I$(PREFIX_INCLUDE) $(CXX_COMMON) $(GZIP_LIB)
+CXX_COMMON:=-I$(PREFIX_INCLUDE) $(CXX_COMMON) #$(GZIP_LIB)
 CXX_COMMON+=-L$(PREFIX_LIB) -Wl,-rpath,$(PREFIX_LIB) -lpythia8 -ldl
 CXX_COMMON+=$(FASTJETFLAGS) $(TENSORFLOWFLAGS) --std=c++17
 CXX_COMMON+=$(CPPFLOWFLAGS) 
