@@ -27,9 +27,15 @@ void append_numbers(std::vector<std::vector<double> > &vectors, std::string &lin
 }
 
 int main(int arc, char const *argv[]) {
-    std::ifstream myfile ("./data/processed/newPartonMatchedJetsNoRecoPtCutFixRapMass.txt"); 
+    int NUM_FEATURES = 8;
+    std::string dataFile(argv[1]);
+    std::string binsFile(argv[2]);
+    int num_data_points = atoi(argv[3]);
+    int num_bins = atoi(argv[4]);
+    std::ifstream myfile (dataFile); 
+    std::cout << "Making bins with data from " << dataFile << ", placing bins in " << binsFile << ", using " << num_data_points << " and " << num_bins << " bins" << std::endl;
 
-    int num_data_points = 10000;
+    
     std::vector<double> partonPt;
     std::vector<double> partonEta;
     std::vector<double> partonPhi;
@@ -63,22 +69,21 @@ int main(int arc, char const *argv[]) {
         }
 
     std::vector<double> data_vec;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < NUM_FEATURES; i++) {
         data_vec.insert(data_vec.end(), jets[i].begin(), jets[i].end());
     }
 
-    int num_bins = 10;
-    TKDTreeBinning test = TKDTreeBinning(num_data_points, 8, data_vec, num_bins);
+    TKDTreeBinning test = TKDTreeBinning(num_data_points, NUM_FEATURES, data_vec, num_bins);
 
     
     std::ofstream write_out;
-    write_out.open("./data/processed/testbins.txt");
+    write_out.open(binsFile);
     for (int i = 0; i < num_bins; i++) {
         std::pair<const Double_t *, const Double_t * > edges =  test.GetBinEdges(i);
-        for (int j = 0; j < 8; j++){
+        for (int j = 0; j < NUM_FEATURES; j++){
             write_out << *(edges.first + j) << " ";
         }
-        for (int j = 0; j < 8; j++){
+        for (int j = 0; j < NUM_FEATURES; j++){
             write_out << *(edges.second + j) << " ";
         }
         write_out << std::endl;
