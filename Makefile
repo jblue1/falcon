@@ -24,6 +24,12 @@ analyzeDelphesJets.out : src/analyzeDelphesJets.cc src/helpers.h
 makeKDTreeBins.out : src/analyze/makeKDTreeBins.cc 
 	$(CXX) $(CXXFLAGS) -o bin/makeKDTreeBins.out $^ $(ROOTFLAGS) 
 
+makeRecoKDTreeBins.out : src/analyze/makeRecoKDTreeBins.cc
+	$(CXX) $(CXXFLAGS) -o bin/makeRecoKDTreeBins.out $^ $(ROOTFLAGS)
+
+makeGetNumEvents.out : src/getNumberofEvents.cc
+	$(CXX) $(CXXFLAGS) -o bin/getNumberofEvents.out $^ $(ROOTFLAGS)
+
 histos : 
 	./bin/makeHistos.out newPartonEvents.root histos.root momentaInfo
 
@@ -31,13 +37,13 @@ checkMass :
 	./bin/makeCheckMass.out newPartonEventsFixedZCoord.root 
 
 angularData : 
-	./bin/writeJetMomentaAngular.out newPartonEventsFixedZCoord.root newPartonMatchedJetsNoRecoPtCutFixRapMassEventNumber.txt
+	./bin/writeJetMomentaAngular.out newPartonEventsJetTagged.root newPartonMatchedJetsNoRecoPtCutFixRapMassEventNumberJetTagged.txt
 
 jetTaggedData : 
 	./bin/writeJetMomentaJetTagged.out newPartonEventsJetTagged.root newPartonMatchedJetsNoRecoPtCutJetTagged.txt
 
 cartesianData : 
-	./bin/writeJetMomentaCartesian.out newPartonEventsFixedZCoord.root testingforPt25Jets.txt
+	./bin/writeJetMomentaCartesian.out newPartonEventsJetTagged.root testing.txt
 	
 delphes :
 	./bin/analyzeDelphesJets.out /home/DAVIDSON/joblue/CMSSW_10_2_24/src/analyzer/MyAnalyzer/Delphes/adjusted_delphes_card_CMS.root ./data/raw/newPartonEventswPFCands.root
