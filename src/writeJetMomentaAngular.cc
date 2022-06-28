@@ -125,8 +125,7 @@ int main(int arc, char const *argv[])
                                 << (*pfJetPt)[pfJetIndex] << " "
                                 << (*pfJetEta)[pfJetIndex] << " "
                                 << (*pfJetPhi)[pfJetIndex] << " "
-                                << sqrt(pfJetMSquared) <<  " "
-                                << i << std::endl;
+                                << sqrt(pfJetMSquared) << std::endl;
                         }
                     }
                 }
