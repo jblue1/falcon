@@ -123,12 +123,13 @@ int main(int argc, char const *argv[]) {
       float partonJetPt = jets[j].pt();
       float partonJetEta = jets[j].rap();
       float partonJetPhi = jets[j].phi_std();
-      float partonJetE = jets[j].E();
-      if (partonJetPt > 20) {
+      float partonJetPSquared = pow(jets[j].px(), 2) + pow(jets[j].py(), 2) + pow(jets[j].pz(), 2);
+      float partonJetMSquared = pow(jets[j].e(), 2) - partonJetPSquared;
+      if (partonJetPt > 20 && partonJetMSquared > 0) {
         parton_jet_momenta.push_back(partonJetPt);
         parton_jet_momenta.push_back(partonJetEta);
         parton_jet_momenta.push_back(partonJetPhi);
-        parton_jet_momenta.push_back(partonJetE);
+        parton_jet_momenta.push_back(partonJetMSquared);
         num_jets++;
       }
     }
