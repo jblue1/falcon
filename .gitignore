@@ -5,6 +5,7 @@ models/
 *.pdf
 *.log
 *.lhe
+*.root
 
 # executables
 *.out
