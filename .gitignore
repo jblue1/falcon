@@ -6,6 +6,7 @@ models/
 *.log
 *.lhe
 *.root
+*.txt
 
 # executables
 *.out
