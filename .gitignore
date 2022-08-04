@@ -26,8 +26,8 @@ old/
 
 # mac stuff
 *.DS_Store
+*.plist
 
 # config and SLURM files
 *cfg.json
 *batch.sh
-
