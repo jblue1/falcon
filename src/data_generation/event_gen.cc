@@ -32,18 +32,18 @@ using namespace fastjet;
 
 /**
  * @brief Write out parton jet 4-momenta as a text file with spaces as the
- * delimiters, and each jet on its own line
+ * delimiters, and each jet on its own line (along with the event number)
  *
- * @param partonJet list of floats in the order pt, eta, phi, m^2
+ * @param partonJet list of floats in the order pt, eta, phi, m^2, event_number
  */
 void write_momenta(std::ofstream &stream, std::vector<float> &partonJet)
 {
     for (int i = 0; i < partonJet.size(); i++)
     {
-        int index = i % 4;
+        int index = i % 5;
 
-        stream << partonJet[i] << " ";
-        if (index == 3)
+        stream << partonJet[i];
+        if (index == 4)
         {
             stream << std::endl;
         }
@@ -59,7 +59,8 @@ void write_momenta(std::ofstream &stream, std::vector<float> &partonJet)
  * to a length 4*n vector of pt, eta, phi, and m^2. Only include jets with pt >
  * 20 GeV and a positive m^2.
  */
-std::vector<float> convertKinematicVariables(std::vector<PseudoJet> &jets)
+std::vector<float> convertKinematicVariables(std::vector<PseudoJet> &jets,
+                                             int eventNumber)
 {
     std::vector<float> partonJetMomenta;
     for (int i = 0; i < jets.size(); i++)
@@ -76,6 +77,7 @@ std::vector<float> convertKinematicVariables(std::vector<PseudoJet> &jets)
             partonJetMomenta.push_back(partonJetEta);
             partonJetMomenta.push_back(partonJetPhi);
             partonJetMomenta.push_back(partonJetMSquared);
+            partonJetMomenta.push_back((float)eventNumber);
         }
     }
     return partonJetMomenta;
@@ -106,7 +108,7 @@ void assignElementInfo(HepMCEvent *element, Pythia *pythia)
  * @brief Fill delphes candidate attributes with info from pythia particle
  */
 void assignCandidateInfo(Candidate *candidate, Particle &particle,
-                         TDatabasePDG *pdgData, TParticlePDG *pdgParticle)
+                         TDatabasePDG *pdgData, TParticlePDG *&pdgParticle)
 {
     candidate->PID = particle.id();
     candidate->Status = particle.statusHepMC();
@@ -139,7 +141,6 @@ void convertToDelphesCandidate(int eventNumber, Pythia *pythia,
     TDatabasePDG *pdgData = TDatabasePDG::Instance();
     TParticlePDG *pdgParticle = NULL;
     element->Number = eventNumber;
-    std::cout << "Event number = " << element->Number << std::endl;
 
     assignElementInfo(element, pythia);
 
@@ -214,6 +215,34 @@ bool isValidParton(int status, int id)
 }
 
 /**
+ * @brief Cluster gen jets out of the particles in the event.
+ *
+ * @param hadronization: pythia object used for hadronization
+ * @return std::vector<PseudoJet>
+ */
+std::vector<PseudoJet> createGenJets(Pythia *hadronization)
+{
+    std::vector<PseudoJet> particles;
+    for (int i = 0; i < hadronization->event.size(); i++)
+    {
+        Particle &particle = hadronization->event[i];
+        if (particle.status() > 0)
+        {
+            particles.push_back(PseudoJet(particle.px(), particle.py(),
+                                          particle.pz(), particle.e()));
+        }
+    }
+    std::cout << "About to cluster " << particles.size()
+              << " particles into genJets" << std::endl;
+    double R = 0.5; // value used in delphes cms card
+    JetDefinition jet_def(antikt_algorithm, R);
+    ClusterSequence cs(particles, jet_def);
+    std::vector<PseudoJet> genJets = cs.inclusive_jets();
+    std::cout << "Clustered " << genJets.size() << " genJets" << std::endl;
+    return genJets;
+}
+
+/**
  * @brief Process the hard scatter + parton shower part of an event. This
  * involves two things: 1) Appending all of the particles from the hard process
  * pythia object to the hadronization pythia object. 2) Clustering jets out of
@@ -221,15 +250,12 @@ bool isValidParton(int status, int id)
  *
  * @return std::vector<PseudoJet>
  */
-std::vector<PseudoJet> processHardScatter(Pythia *hard_process,
-                                          Pythia *hadronization)
+std::vector<PseudoJet> processHardScatter(Pythia *hard_process)
 {
-    hadronization->event.reset();
     std::vector<PseudoJet> particles;
     for (int i = 0; i < hard_process->event.size(); i++)
     {
         Particle &particle = hard_process->event[i];
-        hadronization->event.append(particle);
         int status = particle.status();
         int id = particle.id();
 
@@ -265,10 +291,11 @@ int main(int argc, char const *argv[])
     }
 
     // create output files
-    std::ofstream partonJetOutFile("test.txt");
+    std::ofstream partonJetOutFile("partonJets.txt");
+    std::ofstream genJetOutFile("genJets.txt");
     TFile *delphesJetOutFile = TFile::Open("test.root", "CREATE");
     assert(partonJetOutFile);
-    partonJetOutFile << "pt eta phi m**2" << std::endl;
+    partonJetOutFile << "pt eta phi m**2 eventNumber" << std::endl;
 
     // Create some Delphes Objects
     Delphes *modularDelphes = new Delphes("Delphes");
@@ -278,7 +305,6 @@ int main(int argc, char const *argv[])
         new ExRootTreeWriter(delphesJetOutFile, "Delphes");
     ExRootTreeBranch *branchEvent =
         treeWriter->NewBranch("Event", HepMCEvent::Class());
-    std::cout << "Trying to open configuration file " << argv[2] << std::endl;
     confReader->ReadFile(argv[2]);
     modularDelphes->SetConfReader(confReader);
     modularDelphes->SetTreeWriter(treeWriter);
@@ -299,28 +325,37 @@ int main(int argc, char const *argv[])
     // level jets and save the 4-momenta for training.
     // See https://pythia.org/manuals/pythia8307/HadronLevelStandalone.html for
     // more info
-    Pythia *pythia_hard_process = create_pythia_object();
-    pythia_hard_process->readString("HadronLevel:all = off");
-    pythia_hard_process->init();
-    Pythia *pythia_hadronization = create_pythia_object();
-    pythia_hadronization->readString("ProcessLevel:all = off");
-    pythia_hadronization->init();
-
-    // gROOT->SetBatch();
+    Pythia *pythia = create_pythia_object();
+    pythia->readString("HadronLevel:all = off");
+    pythia->init();
+    //Pythia *pythia_hadronization = create_pythia_object();
+    //pythia_hadronization->readString("ProcessLevel:all = off");
+    //pythia_hadronization->init();
 
     int numEvents = atoi(argv[1]);
     for (int i = 0; i < numEvents; i++)
     {
         std::cout << "Event " << i << std::endl;
-        pythia_hard_process->next();
-        std::vector<PseudoJet> jets =
-            processHardScatter(pythia_hard_process, pythia_hadronization);
+        std::cout << "=============================" << std::endl;
+        std::cout << "About to process hard scatter" << std::endl;
+        std::cout << "=============================" << std::endl;
+        pythia->next();
+        std::vector<PseudoJet> partonJets =
+            processHardScatter(pythia);
 
-        std::vector<float> convertedJets = convertKinematicVariables(jets);
-        write_momenta(partonJetOutFile, convertedJets);
-        pythia_hadronization->next();
+        std::vector<float> convertedPartonJets =
+            convertKinematicVariables(partonJets, i);
+        write_momenta(partonJetOutFile, convertedPartonJets);
+        std::cout << "==============================" << std::endl;
+        std::cout << "About to process hadronization" << std::endl;
+        std::cout << "==============================" << std::endl;
+        pythia->forceHadronLevel(); 
+        std::vector<PseudoJet> genJets = createGenJets(pythia);
+        std::vector<float> convertedGenJets =
+            convertKinematicVariables(genJets, i);
+        write_momenta(genJetOutFile, convertedGenJets);
         convertToDelphesCandidate(
-            i, pythia_hadronization, factory, allParticleOutputArray,
+            i, pythia, factory, allParticleOutputArray,
             stableParticleOutputArray, partonOutputArray, branchEvent);
         modularDelphes->ProcessTask();
 
@@ -329,16 +364,14 @@ int main(int argc, char const *argv[])
         modularDelphes->Clear();
     }
 
-    pythia_hard_process->stat();
+    pythia->stat();
 
     modularDelphes->FinishTask();
     treeWriter->Write();
 
     partonJetOutFile.close();
 
-    // delete pointers
-    delete pythia_hard_process;
-    delete pythia_hadronization;
+    delete pythia;
     delete modularDelphes;
     delete confReader;
     delete treeWriter;
