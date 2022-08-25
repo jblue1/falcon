@@ -1,8 +1,8 @@
-CXXFLAGS = -Wall
+CXXFLAGS = -Wall -O3
 ROOTFLAGS = `$(ROOTSYS)/bin/root-config --cflags --libs`
 FASTJETFLAGS = `$(FASTJETSYS)/bin/fastjet-config --cxxflags --libs --plugins`
-DELPHESFLAGS = -I ~/Programs/Delphes/Delphes-3.5.0/ -I ~/Programs/Delphes/Delphes-3.5.0/external -L ~/Programs/Delphes/Delphes-3.5.0 -lDelphes
-#DELPHESFLAGS = -I ~/CMSSW_10_2_24/src/Delphes-3.4.2/ -I ~/CMSSW_10_2_24/src/Delphes-3.4.2/external/ -L ~/CMSSW_10_2_24/src/Delphes-3.4.2/ -lDelphes
+DELPHESFLAGS = -I $(DELPHES_PATH) -I $(DELPHES_PATH)/external -L $(DELPHES_PATH) -lDelphes
+
 
 makeHistos.out : src/analyzeJets.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -o bin/makeHistos.out $^ $(ROOTFLAGS) $(FASTJETFLAGS)
