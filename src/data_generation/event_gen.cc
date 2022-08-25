@@ -1,7 +1,9 @@
 /*
- * In order for this to run, you need to set
- * ROOT_INCLUDE_PATH=~/Programs/Delphes/Delphes-3.5.0/external/ Solution from
+ * In order for this to run, you need to set the environmental variable
+ * ROOT_INCLUDE_PATH=/path/to/delphes/external/ Solution from
  * https://root-forum.cern.ch/t/error-in-cling-insertintoautoloadingstate/29347.
+ * 
+ * Additionally, you need to have DELPHES_PATH=/path/to/delphes
  */
 
 // normal includes
@@ -176,14 +178,7 @@ Pythia *create_pythia_object()
 {
     Pythia *pythia = new Pythia;
     // process settings
-    pythia->readString("Top:gg2ttbar = on");
-    pythia->readString("Top:qqbar2ttbar = on");
-    pythia->readString("Beams:eCM = 13000.");
-    pythia->readString("Tune:pp 14");
-    pythia->readString("Tune:ee 7");
-    pythia->readString("Random:seed = 0");
-    // pythia->init();
-
+    pythia->readFile("pythia_settings.txt");
     return pythia;
 }
 
@@ -281,21 +276,42 @@ std::vector<PseudoJet> processHardScatter(Pythia *hard_process)
     return cs.inclusive_jets();
 }
 
+
+void usage(std::string error)
+{
+    std::cerr << "Error: " << error << ". Usage:" << std::endl;
+    std::cerr << "event_gen.out num_events data_path card_path rand_seed" << std::endl;
+    std::cerr << "num_events: Number of events to simulate" << std::endl;
+    std::cerr << "data_dir: Path to directory where data will be saved" << std::endl;
+    std::cerr << "path: Path to the delphes card" << std::endl;
+    std::cerr << "rand_seed: Random seed pythia object will use" << std::endl; 
+    exit(1);
+}
+
 int main(int argc, char const *argv[])
 {
-    if (argc != 3)
+    for (int i= 0; i < argc; i++) {
+        std::cout << argv[i] << std::endl;
+    }
+    if (argc != 5)
     {
-        std::cerr << "Arguments are num events and path to delphes card"
-                  << std::endl;
-        exit(1);
+        usage(std::string("Incorrect number of arguments"));
     }
 
     // create output files
-    std::ofstream partonJetOutFile("partonJets.txt");
-    std::ofstream genJetOutFile("genJets.txt");
-    TFile *delphesJetOutFile = TFile::Open("test.root", "CREATE");
+    std::string data_dir(argv[2]);
+    std::string partonJetOutFileString = data_dir + std::string("/partonJets.txt");
+    std::string genJetOutFileString = data_dir + std::string("/genJets.txt");
+    std::string delphesJetOutFileString = data_dir + std::string("/delphesOut.root");
+    std::ofstream partonJetOutFile(partonJetOutFileString);
+    std::ofstream genJetOutFile(genJetOutFileString);
+    TFile *delphesJetOutFile = TFile::Open(delphesJetOutFileString.c_str(), "CREATE");
     assert(partonJetOutFile);
+    partonJetOutFile << "Parton Jet Four-Momenta" << std::endl;
     partonJetOutFile << "pt eta phi m**2 eventNumber" << std::endl;
+    genJetOutFile << "Gen Jet Four-Momenta" << std::endl;
+    genJetOutFile << "pt eta phi m**2 eventNumber" << std::endl;
+    std::cout << "Using delphes card: " << argv[3] << std::endl;
 
     // Create some Delphes Objects
     Delphes *modularDelphes = new Delphes("Delphes");
@@ -305,7 +321,7 @@ int main(int argc, char const *argv[])
         new ExRootTreeWriter(delphesJetOutFile, "Delphes");
     ExRootTreeBranch *branchEvent =
         treeWriter->NewBranch("Event", HepMCEvent::Class());
-    confReader->ReadFile(argv[2]);
+    confReader->ReadFile(argv[3]);
     modularDelphes->SetConfReader(confReader);
     modularDelphes->SetTreeWriter(treeWriter);
     factory = modularDelphes->GetFactory();
@@ -319,26 +335,19 @@ int main(int argc, char const *argv[])
 
     modularDelphes->InitTask();
 
-    // create pythia object
-    // we use two pythia objects: 1 to simulate the hard scatter and parton
-    // shower, and one for hadronization. This way, we can easily cluster parton
-    // level jets and save the 4-momenta for training.
-    // See https://pythia.org/manuals/pythia8307/HadronLevelStandalone.html for
-    // more info
+    // Create pythia object
+    // In order to pause the event generation prior to hadronization so we can cluster
+    // parton jets, we turn the hadron level processing off, do what we need to with the event,
+    // and then force processing the hadron level pythia.forceHadronLevel().
+    // See https://pythia.org/manuals/pythia8307/HadronLevelStandalone.html for more info
+
     Pythia *pythia = create_pythia_object();
     pythia->readString("HadronLevel:all = off");
     pythia->init();
-    //Pythia *pythia_hadronization = create_pythia_object();
-    //pythia_hadronization->readString("ProcessLevel:all = off");
-    //pythia_hadronization->init();
 
     int numEvents = atoi(argv[1]);
     for (int i = 0; i < numEvents; i++)
     {
-        std::cout << "Event " << i << std::endl;
-        std::cout << "=============================" << std::endl;
-        std::cout << "About to process hard scatter" << std::endl;
-        std::cout << "=============================" << std::endl;
         pythia->next();
         std::vector<PseudoJet> partonJets =
             processHardScatter(pythia);
@@ -346,9 +355,6 @@ int main(int argc, char const *argv[])
         std::vector<float> convertedPartonJets =
             convertKinematicVariables(partonJets, i);
         write_momenta(partonJetOutFile, convertedPartonJets);
-        std::cout << "==============================" << std::endl;
-        std::cout << "About to process hadronization" << std::endl;
-        std::cout << "==============================" << std::endl;
         pythia->forceHadronLevel(); 
         std::vector<PseudoJet> genJets = createGenJets(pythia);
         std::vector<float> convertedGenJets =

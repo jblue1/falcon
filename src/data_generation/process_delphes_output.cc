@@ -60,14 +60,21 @@ void getJetsFromFile(std::ifstream &file, int eventNumber,
 
 int main(int argc, char const *argv[])
 {
+    std::string data_dir(argv[1]);
+    std::string delphesJetFileString =
+        data_dir + std::string("/delphesOut.root");
+    std::string partonJetFileString = data_dir + std::string("/partonJets.txt");
+    std::string matchedJetsFileString =
+        data_dir + std::string("/matchedJets.txt");
     TChain chain("Delphes");
-    chain.Add("test.root");
+    chain.Add(delphesJetFileString.c_str());
     std::ifstream readFile;
-    readFile.open("partonJets.txt");
-    std::string firstLine;
-    getline(readFile, firstLine); // first line is just column headers
+    readFile.open(partonJetFileString);
+    std::string headerLine;
+    getline(readFile, headerLine); // first line says what kind of jets
+    getline(readFile, headerLine); // second line is just column headers
 
-    std::ofstream writeFile("final_data.txt");
+    std::ofstream writeFile(matchedJetsFileString);
 
     ExRootTreeReader *treeReader = new ExRootTreeReader(&chain);
     Long64_t numDelphesEvents = treeReader->GetEntries();
@@ -112,19 +119,23 @@ int main(int argc, char const *argv[])
                             recoJetIndex = k;
                         }
                     }
-                    if (minDR < 0.35)
+                    if (minDR < 0.35 && partonJetsCurrentEvent[j][3] > 0)
                     {
                         numMatchedPartonJets++;
                         Jet *matchedRecoJet =
                             (Jet *)branchRecoJet->At(recoJetIndex);
-                        writeFile << partonJetsCurrentEvent[j][0] << " "
-                                  << partonJetsCurrentEvent[j][1] << " "
-                                  << partonJetsCurrentEvent[j][2] << " "
-                                  << partonJetsCurrentEvent[j][3] << " "
-                                  << matchedRecoJet->PT << " "
-                                  << matchedRecoJet->Eta << " "
-                                  << matchedRecoJet->Phi << " "
-                                  << pow(matchedRecoJet->Mass, 2) << std::endl;
+                        if (matchedRecoJet->Mass > 0)
+                        {
+                            writeFile << partonJetsCurrentEvent[j][0] << " "
+                                      << partonJetsCurrentEvent[j][1] << " "
+                                      << partonJetsCurrentEvent[j][2] << " "
+                                      << partonJetsCurrentEvent[j][3] << " "
+                                      << matchedRecoJet->PT << " "
+                                      << matchedRecoJet->Eta << " "
+                                      << matchedRecoJet->Phi << " "
+                                      << pow(matchedRecoJet->Mass, 2)
+                                      << std::endl;
+                        }
                     }
                 }
             }
