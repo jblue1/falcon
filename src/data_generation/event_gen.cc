@@ -58,7 +58,7 @@ void write_momenta(std::ofstream &stream, std::vector<float> &partonJet)
 
 /**
  * @brief Convert a vector of jets (of size n) defined by pt, eta, phi, and e,
- * to a length 4*n vector of pt, eta, phi, and m^2. Only include jets with pt >
+ * to a length 4*n vector of pt, eta, phi, and m. Only include jets with pt >
  * 20 GeV and a positive m^2.
  */
 std::vector<float> convertKinematicVariables(std::vector<PseudoJet> &jets,
@@ -78,7 +78,7 @@ std::vector<float> convertKinematicVariables(std::vector<PseudoJet> &jets,
             partonJetMomenta.push_back(partonJetPt);
             partonJetMomenta.push_back(partonJetEta);
             partonJetMomenta.push_back(partonJetPhi);
-            partonJetMomenta.push_back(partonJetMSquared);
+            partonJetMomenta.push_back(sqrt(partonJetMSquared));
             partonJetMomenta.push_back((float)eventNumber);
         }
     }

@@ -124,7 +124,7 @@ int main(int argc, char const *argv[])
                         numMatchedPartonJets++;
                         Jet *matchedRecoJet =
                             (Jet *)branchRecoJet->At(recoJetIndex);
-                        if (matchedRecoJet->Mass > 0)
+                        if (pow(matchedRecoJet->Mass, 2) > 0)
                         {
                             writeFile << partonJetsCurrentEvent[j][0] << " "
                                       << partonJetsCurrentEvent[j][1] << " "
@@ -133,7 +133,7 @@ int main(int argc, char const *argv[])
                                       << matchedRecoJet->PT << " "
                                       << matchedRecoJet->Eta << " "
                                       << matchedRecoJet->Phi << " "
-                                      << pow(matchedRecoJet->Mass, 2)
+                                      << matchedRecoJet->Mass
                                       << std::endl;
                         }
                     }
