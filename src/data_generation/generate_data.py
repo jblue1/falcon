@@ -33,7 +33,7 @@ def main():
     if os.environ["ROOT_INCLUDE_PATH"] == "":
         sys.exit("Must set ROOT_INCLUDE_PATH to path/to/delphes/external")
     num_events = sys.argv[1]
-    delphes_path = sys.argv[2]
+    delphes_path = sys.argv[2] + "/cards/delphes_card_CMS.tcl"
     today = str(datetime.date.today())
     save_dir = "../../data/" + str(today) + "/"
     print("Checking if directory ", save_dir, " exists")

@@ -146,8 +146,6 @@ void convertToDelphesCandidate(int eventNumber, Pythia *pythia,
 
     assignElementInfo(element, pythia);
 
-    std::cout << "There are " << pythia->event.size() << " particles in event "
-              << eventNumber << std::endl;
     for (int i = 0; i < pythia->event.size(); i++)
     {
         Particle &particle = pythia->event[i];
@@ -227,13 +225,10 @@ std::vector<PseudoJet> createGenJets(Pythia *hadronization)
                                           particle.pz(), particle.e()));
         }
     }
-    std::cout << "About to cluster " << particles.size()
-              << " particles into genJets" << std::endl;
     double R = 0.5; // value used in delphes cms card
     JetDefinition jet_def(antikt_algorithm, R);
     ClusterSequence cs(particles, jet_def);
     std::vector<PseudoJet> genJets = cs.inclusive_jets();
-    std::cout << "Clustered " << genJets.size() << " genJets" << std::endl;
     return genJets;
 }
 

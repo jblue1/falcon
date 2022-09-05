@@ -89,12 +89,8 @@ int main(int argc, char const *argv[])
         getJetsFromFile(readFile, i, partonJetsCurrentEvent,
                         firstPartonJetNextEvent);
         int numPartonJetsInEvent = partonJetsCurrentEvent.size();
-        std::cout << "Number of parton jets in event " << i << ": "
-                  << numPartonJetsInEvent << std::endl;
         treeReader->ReadEntry(i);
         int numRecoJets = branchRecoJet->GetEntries();
-        std::cout << "Number of reco jets in event " << i << ": " << numRecoJets
-                  << std::endl;
 
         // loop through parton jets looking for reco jet matches
         if (partonJetsCurrentEvent.size() > 0)
